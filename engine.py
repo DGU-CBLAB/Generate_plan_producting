@@ -455,7 +455,7 @@ class Engine:
 								for k in range(min_repeat_count):
 									if (doubing and (k+1)%2 ==0) or (not doubing): ##더블링 조건에 맞게 무게 계산
 									    	## 낭비량 계산 
-										temp_residual = round(utils.realWeight(thickness,(width)-temp_w,temp_length,1,k+1)/1000,2)
+										temp_residual = round(utils.realWeight(thickness,(width)-temp_w,temp_length,1,k+1)/1000)
 										zero_list = []
 										for l in range(len(combi_count_list[i][j])):
 											zero_list.append(0)
@@ -580,14 +580,14 @@ class Engine:
 						    ## 계획을 초과하는 생산하는 횟수 따로 기록
 						    while 1:
 						        if ((doubing and (addition_count)%2 ==0) or (not doubing)): ##더블링 조건에 맞게 무게 계산
-						            addition_weight = round(utils.realWeight(thickness,temp_w,temp_length,1,addition_count)/1000,2)
-						            addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,addition_count)/1000,2)
+						            addition_weight = round(utils.realWeight(thickness,temp_w,temp_length,1,addition_count)/1000)
+						            addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,addition_count)/1000)
 
 						            if temp_total_extra - addition_weight <= 0:
 						                if temp_total_extra -(addition_weight+addition_residual) < -cal_realweight*0.01:
 						                    addition_count = pre_count
-						                    addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,pre_count)/1000,2)
-						                    addition_weight = round(utils.realWeight(thickness,temp_w,temp_length,1,pre_count)/1000,2)
+						                    addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,pre_count)/1000)
+						                    addition_weight = round(utils.realWeight(thickness,temp_w,temp_length,1,pre_count)/1000)
 						                break;
 						            else:
 						                pre_count = addition_count
@@ -827,11 +827,11 @@ class Engine:
 					temp_width = temp_order_group_data['폭'][selected_list[i][1][j][2][k]]
 					temp_length = temp_order_group_data['길이(기준)'][selected_list[i][1][j][2][k]]
 					temp_thickness = temp_order_group_data['두께'][selected_list[i][1][j][2][k]]
-					temp_weight_list.append(round(utils.realWeight(temp_thickness,temp_width,temp_length,1,selected_list[i][1][j][1]),2))
+					temp_weight_list.append(round(utils.realWeight(temp_thickness,temp_width,temp_length,1,selected_list[i][1][j][1])))
 
 					for m in range(len(order_list)):
 						if order_list[m][0] == temp_order_group_data['제품코드'][selected_list[i][1][j][2][k]]:
-					    		order_list[m][1] += round(utils.realWeight(temp_thickness,temp_width,temp_length,1,selected_list[i][1][j][1]),2)
+					    		order_list[m][1] += round(utils.realWeight(temp_thickness,temp_width,temp_length,1,selected_list[i][1][j][1]))
 					    		order_list[m][2].append(temp_material_group_data['제품코드'][selected_list[i][0]]+' / '+temp_material_group_data['ROLL'][selected_list[i][0]]+' / '+\
                                            					str(temp_material_group_data['포장중량'][selected_list[i][0]]))
 				temp_order_num.append(' / ')    
@@ -870,11 +870,11 @@ class Engine:
 				if temp_list[0] == order_list[j][0]:
 					temp_list[1] += order_list[j][1]
 					temp_list[4]= order_list[j][2]
-			temp_list[1] = round(temp_list[1],3)
+			temp_list[1] = round(temp_list[1])
 			for j in range(len(temp_order_group_data['제품코드'])):
 				if temp_list[0] == order_list[j][0]:
-					temp_list[2] = round(temp_order_group_data['생산량'][j]*1000,3)
-			temp_list[3] = round(temp_list[2]-temp_list[1],3)
+					temp_list[2] = round(temp_order_group_data['생산량'][j]*1000)
+			temp_list[3] = round(temp_list[2]-temp_list[1])
 			temp_list[4] = list(set(temp_list[4]))
 
 			order_code_result_list.append(temp_list)
