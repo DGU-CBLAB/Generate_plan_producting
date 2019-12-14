@@ -69,7 +69,7 @@ def check_list_index(index_list, index,count):
 def find_possible_index(tried_material_list, index_list, list_size,index):
     while(1):
         if not check_index(tried_material_list,index) and not check_index(index_list,index) :
-            index = random.randrange(0,list_size)#(index+1)%list_size 
+            index = random.randrange(0,list_size)#(index+1)%list_size
 	    #index = random.randrange(0,list_size)%
         else:
             return index
@@ -95,19 +95,19 @@ def sum_list(list):
 
 def check_residual_ratio(realweight,realweight_list,residual_list):
     for i in range(len(realweight_list)):
-        if round(realweight/1000,2)==realweight_list[i]:
+        if round(realweight/1000)==realweight_list[i]:
             if residual_list[i]/(residual_list[i]+realweight_list[i]) <= 0.2:
                 return True
     return False
 
 def get_residual(realweight,realweight_list,residual_list):
     for i in range(len(realweight_list)):
-        if round(realweight/1000,2)==realweight_list[i]:
+        if round(realweight/1000)==realweight_list[i]:
             return residual_list[i]
     return 0
 
 def checkCombination(temp_list,temp_index_list,index,extra_width,max_width):
-    
+
     temp_index = temp_index_list[index][:]
     temp_index.sort()
 
@@ -117,8 +117,8 @@ def checkCombination(temp_list,temp_index_list,index,extra_width,max_width):
         temp_sorted_index.sort()
         if temp_index == temp_sorted_index:
             return False
-        
-    if extra_width >=0 and extra_width<=70:
+
+    if extra_width >=0 and extra_width<=100:
         return True
     else:
         return False
@@ -145,16 +145,16 @@ def calculateRepeat(thickness,width,length,goal_weight):
     return repeat
 
 def expectRealweight(realweight):
-    return round(realweight/1000,2)
+    return round(realweight/1000)
 
 def expectSumRealweight(realweight_list):
     sum_realweight=0
     for realweight in realweight_list:
         sum_realweight += realweight
-    return round(sum_realweight/1000,2)
+    return round(sum_realweight/1000)
 
 def calculateRest(input_realweight,sum_realweight):
-    return round(input_realweight-sum_realweight,2)
+    return round(input_realweight-sum_realweight)
 
 def calculateRealweight(thickness,input_weight):
     expect_ratio=0.95
@@ -203,7 +203,7 @@ def calculateRealweight(thickness,input_weight):
 
         expect_ratio = 0.95
 
-    return round(expect_ratio*input_weight,2)
+    return round(expect_ratio*input_weight)
 
 def translate_alloy(alloy):
     if alloy == 'AB':

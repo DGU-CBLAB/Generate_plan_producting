@@ -11,7 +11,7 @@ class MyWindow(QWidget):
 		self.order_file_name = ""
 		self.material_file_name = ""
 		self.result_list = []
-		
+		self.e = eg.Engine()
 
 	def setupUI(self):
 		
@@ -64,12 +64,14 @@ class MyWindow(QWidget):
 
 		##조합 group 계산
 		if(self.order_file_name!='' and self.material_file_name!=''):
-			e = eg.Engine(self.order_file_name[0],self.material_file_name[0])
-			e.read_file()
+			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0])
+			self.e.read_file()
 			for i in select_alloy_list:
-				selected_list, temp_order_group_data, temp_material_group_data = e.get_combination(i)
-				combi_df,result_df = e.get_result_data(selected_list, temp_order_group_data,temp_material_group_data)
-				self.result_list.append([i,combi_df,result_df])	
+				self.e.run_thread(i,5)
+				self.result_list.append([i,self.e.select_best_result()])
+				#selected_list, temp_order_group_data, temp_material_group_data = e.get_combination(i)
+				#combi_df,result_df = e.get_result_data(selected_list, temp_order_group_data,temp_material_group_data)
+				#self.result_list.append([i,combi_df,result_df])	
 
 			QMessageBox.about(self, "알림창", "성공적으로 조합하셨습니다.")
 		else:
@@ -77,9 +79,8 @@ class MyWindow(QWidget):
             
 	def toXLS(self):
 		if(self.result_list != []):
-			e = eg.Engine('','')
 			for i in range(len(self.result_list)):
-				e.save_excel(self.result_list[i][0],self.result_list[i][1],self.result_list[i][2])
+				self.e.save_excel(self.result_list[i][0],self.result_list[i][1])
 			QMessageBox.about(self, "알림창", "성공적으로 저장하셨습니다.")
 		else:
 			QMessageBox.about(self, "알림창", "조합하지 않으셨습니다.")
