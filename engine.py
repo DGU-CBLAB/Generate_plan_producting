@@ -844,14 +844,19 @@ class Engine:
 			temp_list.append(cal_meterial_weight-weight_list_sum)
 			temp_list.append(temp_material_group_data['실폭'][selected_list[i][0]])
 			temp_list.append(temp_width_sum)
-			temp_list.append(temp_material_group_data['실폭'][selected_list[i][0]]-temp_width_sum)
+			temp_material_alloy = utils.translate_alloy(temp_material_group_data['ALLOY'][selected_list[i][0]])
+			temp_detail_code = temp_order_group_data['세부품목'][selected_list[i][1][j][2][0]]
+			temp_thickness = temp_order_group_data['두께'][selected_list[i][1][j][2][0]]
+			temp_mim = utils.get_mim_width(len((selected_list[i][1][j][2])),temp_thickness,temp_material_alloy,temp_detail_code)
+			temp_list.append(temp_material_group_data['실폭'][selected_list[i][0]]-temp_width_sum-temp_mim)
+			temp_list.append(temp_mim)
 			temp_list.append(temp_weight_list)
 			temp_list.append(temp_length_sum)
 			temp_list.append(temp_count_sum)
 			temp_list.append(temp_order_num)
 			combi_df_list.append(temp_list)
 		combi_df = pd.DataFrame(columns =['원자재 index','원자재 제품코드','원자재 포장중량','가공무게','조합 무게합','남은 무게'\
-				                  ,'원자재 실폭','주문 실폭합',"폭 차(mim 포함)",'조합 무게','조합 길이','조합 횟수','조합 제품코드'],data=combi_df_list)
+				                  ,'원자재 실폭','주문 실폭합',"폭 차","mim 손실",'조합 무게','조합 길이','조합 횟수','조합 제품코드'],data=combi_df_list)
 		combi_df = combi_df.sort_values(['원자재 index'])
 
 		for i in range(len(order_list)):
