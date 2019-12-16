@@ -14,10 +14,10 @@ class MyWindow(QWidget):
 		self.e = eg.Engine()
 
 	def setupUI(self):
-		
+
 		self.setGeometry(1000, 500, 300, 300)
 		self.setWindowTitle("알류미늄 폭조합")
-		
+
 		self.orderButton = QPushButton("Order File Open")
 		self.orderButton.clicked.connect(self.pushOrderButtonClicked)
 
@@ -26,21 +26,21 @@ class MyWindow(QWidget):
 
 		self.alloy_list=[]
 		alloy = ["A1050","A1235","A1100","A8079","A3003","A8021","F308","F309","BRW04"]
-	
-	
+
+
 		for i in alloy:
 			self.alloy_list.append(QCheckBox(i, self))
-		
+
 		self.btn1 = QPushButton('Start combination', self)
 		self.btn1.setCheckable(True)
 		self.btn1.clicked.connect(self.grouping)
-		
+
 		self.btn2 = QPushButton('Save result excel', self)
 		self.btn2.setCheckable(True)
 		self.btn2.clicked.connect(self.toXLS)
 
-		self.label = QLabel()		    
-		    
+		self.label = QLabel()
+
 		layout = QVBoxLayout()
 		layout.addWidget(self.orderButton)
 		layout.addWidget(self.materialButton)
@@ -50,11 +50,11 @@ class MyWindow(QWidget):
 		layout.addWidget(self.label)
 		layout.addWidget(self.btn1)
 		layout.addWidget(self.btn2)
-		
+
 		self.setLayout(layout)
 
 	def grouping(self):
-				
+
 		select_alloy_list = []
 		for i in range(len(self.alloy_list)):
          		#alloy 선택
@@ -67,16 +67,16 @@ class MyWindow(QWidget):
 			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0])
 			self.e.read_file()
 			for i in select_alloy_list:
-				self.e.run_thread(i,5)
+				self.e.run_thread(i,20)
 				self.result_list.append([i,self.e.select_best_result()])
 				#selected_list, temp_order_group_data, temp_material_group_data = e.get_combination(i)
 				#combi_df,result_df = e.get_result_data(selected_list, temp_order_group_data,temp_material_group_data)
-				#self.result_list.append([i,combi_df,result_df])	
+				#self.result_list.append([i,combi_df,result_df])
 
 			QMessageBox.about(self, "알림창", "성공적으로 조합하셨습니다.")
 		else:
 			QMessageBox.about(self, "알림창", "File을 설정하지 않으셨습니다.")
-            
+
 	def toXLS(self):
 		if(self.result_list != []):
 			for i in range(len(self.result_list)):
@@ -84,13 +84,13 @@ class MyWindow(QWidget):
 			QMessageBox.about(self, "알림창", "성공적으로 저장하셨습니다.")
 		else:
 			QMessageBox.about(self, "알림창", "조합하지 않으셨습니다.")
-		    
+
 	def pushOrderButtonClicked(self):
 		self.order_file_name = QFileDialog.getOpenFileName(self)
 
-		
+
 	def pushmaterialButtonClicked(self):
-		self.material_file_name = QFileDialog.getOpenFileName(self)		
+		self.material_file_name = QFileDialog.getOpenFileName(self)
 
 
 if __name__ == "__main__":
@@ -98,4 +98,3 @@ if __name__ == "__main__":
 	window = MyWindow()
 	window.show()
 	app.exec_()
-
