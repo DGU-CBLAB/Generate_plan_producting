@@ -19,6 +19,7 @@ class Engine:
 		self.material_index_list=[]
 		self.result_list = []
 		self.compare_list = []
+		self.best_result = []
 
 	def read_file(self):
 		self.order_data = pd.read_excel(self.order_file_name)
@@ -172,17 +173,16 @@ class Engine:
 			middle_group_name, middle_group_index, \
 			small_group_name, small_group_index;
 
-	def get_combination(self, current_big_group_name):
+	def get_combination(self, current_big_group_name,residual_rate):
 		temp_order_group_data, temp_material_group_data , \
 		middle_group_name, middle_group_index, \
 		small_group_name, small_group_index = self.get_current_big_group_info(current_big_group_name)
 
 		CONST_OUT_OF_COUNT_NUM = 100000
-		RESIDUAL_RATE = 0.3
+		RESIDUAL_RATE = residual_rate
 
 		SUM_OF_SCOURE = 0
 		SUM_OF_SCOURE_COUNT = 0
-		SUM_OF_TOTAL_COUNT = 0
 		temp_order_group_data['횟수'] = temp_order_group_data['const_횟수']
 		temp_order_group_data['addition_횟수'] = 0 #temp_order_group_data['const_addition_횟수']
 
@@ -191,21 +191,14 @@ class Engine:
 		selected_list = []
 		selected_material=[]
 		holding_material=[]
-		selected_df_list=[]
 
-		count_zero=-1
-		sum_residual=0
-		sum_addition_weight = 0
 		selected_weight=0
 		total_count = utils.sum_list(temp_order_group_data['횟수'])
 		total_addition_count = 0
 		current_count = 0
 
-		best_selected_list = []
 		select_list = []
-		best_sum_weight = 0
 
-		next = False
 		print("@@@@@@@@@@@@@@@@@@@@@current_big_group_name: ", current_big_group_name)
 		for r in range(0,len(middle_group_index)-1):
 			start_index=0
@@ -231,10 +224,9 @@ class Engine:
 			total_best_select_list = []
 			total_best_material_index = -1
 			total_best_residual = CONST_OUT_OF_COUNT_NUM
-			total_best_addition_weight = 0
 			total_best_combi_weight = 0
 			total_best_material_realweight = 0
-			total_tri_count = 0
+
 			need_new_material = 0
 			one_more = 0
 
@@ -255,28 +247,29 @@ class Engine:
 
 					for i in selected_material:
 						if i == n:
-							pass
-							#possible = False
+							#pass
+							possible = False
 
 					if possible:
 						## 원자재 정보 setting
 						material_code = temp_material_group_data['제품코드'][n]
 						material_company=material_code[len(material_code)-1]
 						material_temper = temp_material_group_data['TEMPER'][n]
-						const_width = temp_material_group_data['실폭'][n]
+						material_thickness = temp_material_group_data['실두께'][n]
 						material_alloy = utils.translate_alloy(temp_material_group_data['ALLOY'][n])
-						width = temp_material_group_data['실폭'][n]
-						weight = float(temp_material_group_data['포장중량'][n])/1000
+						material_width = temp_material_group_data['실폭'][n]
+						material_weight = float(temp_material_group_data['포장중량'][n])/1000
+
 						thickness = temp_order_group_data['두께'][small_group_index[start_index]]
-						cal_realweight= utils.calculateRealweight(thickness,weight)
+						processed_weight= utils.calculateRealweight(thickness,material_weight)
+
 						if current_big_group_name == 'A8021' and temp_order_group_data['원자재_M'][middle_group_index[r]] == '무관':
 							order_material = 'N'
 						else:
 							order_material = temp_order_group_data['원자재_M'][middle_group_index[r]]
 
-						possible = utils.check_material(material_company,material_temper,thickness, order_material,\
-									          temp_order_group_data['원자재_T'][middle_group_index[r]],\
-									          temp_order_group_data['두께'][middle_group_index[r]])
+						possible = utils.check_material(material_company, material_temper, material_thickness, \
+												order_material, temp_order_group_data['원자재_T'][middle_group_index[r]], thickness)
 
 						if possible:
 							holding_material.append(n)
@@ -301,7 +294,6 @@ class Engine:
 					combi_width_list=[]
 					combi_index_list=[]
 					combi_count_list=[]
-					SUM_OF_TOTAL_COUNT +=1
 					for i in range(start_index,end_index):  #'권취','TEMPER','두께' 일치
 
 						max_index_count = 0
@@ -350,14 +342,14 @@ class Engine:
 							min_width = temp_order_group_data['폭'][small_group_index_end-1]
 							initial_mim_width = utils.get_mim_width(1,thickness,material_alloy,detail_code)
 							max_index_count *=2
-							while (index_count < max_index_count and width >= min_width+initial_mim_width):
+							while (index_count < max_index_count and material_width >= min_width+initial_mim_width):
 								#'ALLOY','권취','TEMPER','두께','길이','내경','코아','폭' 일치
 								temp_width_list.append([])
 								temp_index_list.append([])
 								temp_count_list.append([])
 								index_count += 1
 								index += 1
-								extra_width = width
+								extra_width = material_width
 
 								try_combi_count = 0
 								check_only_addition = True
@@ -378,7 +370,7 @@ class Engine:
 
 
 
-									if utils.check_push(temp_width_list[index],temp_order_group_data['폭'][j]+addition_mim_width,width):
+									if utils.check_push(temp_width_list[index],temp_order_group_data['폭'][j]+addition_mim_width,material_width):
 
 										if temp_order_group_data['횟수'][j] < CONST_OUT_OF_COUNT_NUM:
 											check_only_addition = False ## 추가 오더만으로 생산은 필요 없음
@@ -416,7 +408,7 @@ class Engine:
 											    special_addition_count_list.append([2,temp_index_list[index][k]])
 
 								    #본 조합이 좋은 조합이면 살리고 아니면 죽임
-								if not(utils.checkCombination(temp_width_list,temp_index_list,index,extra_width,width)) \
+								if not(utils.checkCombination(temp_width_list,temp_index_list,index,extra_width,material_width)) \
 									    or check_only_addition:
 									del temp_width_list[index]
 									del temp_index_list[index]
@@ -440,8 +432,9 @@ class Engine:
 					if len(combi_width_list)>0 :
 
 						for i in range(len(combi_width_list)):
-						#각 조합의 길이는 마지막에 있음
+							#각 조합의 길이는 마지막에 있음
 							temp_length = combi_width_list[i][len(combi_width_list[i])-1]
+
 							for j in range(len(combi_width_list[i])-1):
 
 								min_repeat_count = min(combi_count_list[i][j])
@@ -453,15 +446,17 @@ class Engine:
 								for k in range(min_repeat_count):
 									if (doubing and (k+1)%2 ==0) or (not doubing): ##더블링 조건에 맞게 무게 계산
 									    	## 낭비량 계산
-										temp_residual = round(utils.realWeight(thickness,(width)-temp_sum_witdh,temp_length,1,k+1)/1000)
+										temp_residual = round(utils.realWeight(thickness,material_width-temp_sum_witdh,temp_length,1,k+1)/1000)
+										temp_real_weight = round(utils.realWeight(thickness,temp_sum_witdh,temp_length,1,k+1)/1000,2)
 										zero_list = []
 										for l in range(len(combi_count_list[i][j])):
 											zero_list.append(0)
 
+										if temp_real_weight <= material_weight:
 									    	#무게, 횟수, index_list, count_list, combi_width_list, 추가 count_list ,가로 손실 길이 ,낭비량
-										temp_realweight_list.append([round(utils.realWeight(thickness,temp_sum_witdh,temp_length,1,k+1)/1000,2),k+1\
-										         ,combi_index_list[i][j],combi_count_list[i][j],combi_width_list[i][j],zero_list,\
-										         (width)-temp_sum_witdh,temp_residual])
+											temp_realweight_list.append([temp_real_weight,k+1,combi_index_list[i][j],\
+																		combi_count_list[i][j],combi_width_list[i][j],zero_list,\
+											         					material_width-temp_sum_witdh,temp_residual])
 
 								if len(temp_realweight_list)!=0:
 									temp_realweight_list.sort(reverse=True)
@@ -478,17 +473,18 @@ class Engine:
 
 					else:
 						#elements 조합 시작 -> set 생성
-					    #원자재 무게보다 많이 나가는 조합 버림
-						for i in range(len(sorted_realweight_list)):
-							del_index=0
-							for j in range(len(sorted_realweight_list[i])):
-								if sorted_realweight_list[i][j][0] > cal_realweight:
-									del_index = j
-								else:
-									sorted_realweight_list[i] = sorted_realweight_list[i][del_index:len(sorted_realweight_list[i])]
-									break;
 
-					    	## 초기 잔여량은 원자재 사용 무게 / 무게 순으로 sort
+					    #원자재 무게보다 많이 나가는 조합 버림
+						#for i in range(len(sorted_realweight_list)):
+						#	del_index=0
+						#	for j in range(len(sorted_realweight_list[i])):
+						#		if sorted_realweight_list[i][j][0] > processed_weight:
+						#			del_index = j
+						#		else:
+						#			sorted_realweight_list[i] = sorted_realweight_list[i][del_index:len(sorted_realweight_list[i])]
+						#			break;
+
+					    ## 초기 잔여량은 원자재 사용 무게 / 무게 순으로 sort
 						select_residual=CONST_OUT_OF_COUNT_NUM
 					    	#select_addition_weight=0
 						select_list=[]
@@ -499,6 +495,7 @@ class Engine:
 						max_count = 1
 
 						##max_count 설정
+						#print("processed_weight",processed_weight)
 						for i in range(len(sorted_realweight_list)):
 							max_count += len(sorted_realweight_list[i])#*len(sorted_realweight_list[i])
 
@@ -508,7 +505,7 @@ class Engine:
 							count+=1
 							temp_list = []
 							combi_count = 0
-							temp_total_extra = cal_realweight
+							temp_total_extra = processed_weight
 							temp_sum_redisual = 0
 							temp_try_count = -1
 							temp_combi_weight = 0
@@ -520,7 +517,7 @@ class Engine:
 								i = random.randrange(0,len(sorted_realweight_list))
 								j = random.randrange(0,len(sorted_realweight_list[i]))
 
-							    	## overlap check
+							    ## overlap check
 								check_overlap_index = False
 								temp_select_index = sorted_realweight_list[i][j][2][:]
 								temp_select_index.sort()
@@ -533,9 +530,8 @@ class Engine:
 										break;
 
 								#추가로 더 넣을 수 있는지 확인
-								if temp_total_extra -(sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1]) >= -cal_realweight*0.02\
+								if temp_total_extra -(sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1]) >= -processed_weight*0.02\
 									and (not check_overlap_index):
-
 									temp_list.append(sorted_realweight_list[i][j])
 									temp_total_extra -= (sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1])
 									temp_sum_redisual += sorted_realweight_list[i][j][-1]
@@ -559,7 +555,8 @@ class Engine:
 						        #    used = True
 						        #    break;
 
-						if temp_total_extra <= cal_realweight*RESIDUAL_RATE or not(used): # len(temp_list)>0 : #and temp_total_extra >= cal_realweight*0.1
+
+						if temp_total_extra <= processed_weight*RESIDUAL_RATE or not(used): # len(temp_list)>0 : #and temp_total_extra >= processed_weight*0.1
 						    pre_count = 0
 						    addition_count = 0
 						    addition_residual = 0
@@ -585,7 +582,7 @@ class Engine:
 						            addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,addition_count)/1000)
 
 						            if temp_total_extra - addition_weight <= 0:
-						                if temp_total_extra -(addition_weight+addition_residual) < -cal_realweight*0.01:
+						                if temp_total_extra -(addition_weight+addition_residual) < -processed_weight*0.01:
 						                    addition_count = pre_count
 						                    addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,pre_count)/1000)
 						                    addition_weight = round(utils.realWeight(thickness,temp_sum_witdh,temp_length,1,pre_count)/1000)
@@ -630,9 +627,10 @@ class Engine:
 						    	if n == i:
 						    		used_material = 1;
 
-						    temp_score = 100 - (100*((temp_total_residual/cal_realweight)+2*(temp_extra_width/100))\
+						    temp_score = 100 - (100*((temp_total_residual/processed_weight)+2*(temp_extra_width/100))\
 						                        +temp_extra_width*((combi_count-1)/3)+200*(addition_count/combi_total_count)+300*used_material)
-												#100*(addition_weight/cal_realweight)
+												#100*(addition_weight/processed_weight)
+
 
 						#새로운 조합이 더 좋을 경우
 						# 점수 비교
@@ -675,11 +673,11 @@ class Engine:
 								temp_sum +=select_list[i][0]
 
 
-							if temp_sum <= cal_realweight :
+							if temp_sum <= processed_weight :
 								total_best_score = best_score
 								total_best_select_list = select_list
 								total_best_material_index = n
-								total_best_material_realweight = cal_realweight
+								total_best_material_realweight = processed_weight
 								total_best_residual = select_residual
 								total_best_combi_weight = combi_weight
 
@@ -709,9 +707,8 @@ class Engine:
 						n = total_best_material_index
 						select_residual = total_best_residual
 						combi_weight = total_best_combi_weight
-						cal_realweight = total_best_material_realweight
-						weight = float(temp_material_group_data['포장중량'][n])/1000
-						width  = temp_material_group_data['실폭'][n]
+						processed_weight = total_best_material_realweight
+						material_width  = temp_material_group_data['실폭'][n]
 						combi_try_count = 0
 						standard_score = 100
 
@@ -752,10 +749,9 @@ class Engine:
 
 
 						#제거 목록 index 선택
-						sum_residual += select_residual
 						selected_material.append(n)
 						try:
-							holding_material.remove(n)
+							holding_material.remove(n) #holding 해제
 						except:
 							pass
 						selected_material.sort()
@@ -764,6 +760,7 @@ class Engine:
 						temp_selected_list.append(select_list)
 						selected_list.append(temp_selected_list)
 
+						#설정 초기화
 						n = random.randrange(0,len(temp_material_group_data))
 						SUM_OF_SCOURE += total_best_score
 						SUM_OF_SCOURE_COUNT +=1
@@ -787,14 +784,11 @@ class Engine:
 
 						standard_score += math.log((120-standard_score)/(120-total_best_score))
 						combi_try_count +=1
+		#len(temp_material_group_data)/len(selected_list)는 얼만큼 원자재를 많이 사용했는지 나타냄
+		rate_of_using_material=len(selected_list)/len(temp_material_group_data)
+		return selected_list, temp_order_group_data ,temp_material_group_data, (SUM_OF_SCOURE/SUM_OF_SCOURE_COUNT), rate_of_using_material
 
-		return selected_list, temp_order_group_data ,temp_material_group_data, (SUM_OF_SCOURE/SUM_OF_SCOURE_COUNT)
-
-	def get_result_data(self,selected_list, temp_order_group_data,temp_material_group_data,avg_score):
-		temp_order_group_data
-		temp_material_group_data
-		selected_list
-
+	def get_result_data(self,selected_list, temp_order_group_data,temp_material_group_data,avg_score,rate_of_using_material):
 		order_list = []
 		for i in range(len(temp_order_group_data['제품코드'])):
 		    order_list.append([temp_order_group_data['제품코드'][i],0,[]])
@@ -919,7 +913,9 @@ class Engine:
 		temp_list =["총 추가 생산량",-int(extra_sum),"미 생산량",int(need_sum),"주문량",total_sum,"총 낭비량",int(residual_sum)]
 
 		##result score 계산
-		result_score = 50-50*((need_sum/total_sum) + (extra_sum/(total_sum-need_sum)) + (residual_sum/(total_sum-need_sum))) + avg_score/2
+		#((total_sum-need_sum)/(total_sum*len(selected_list))
+		result_score = 50-50*((need_sum/total_sum) + (extra_sum/(total_sum-need_sum)) + (residual_sum/(total_sum-need_sum))) \
+						+ avg_score/2+((total_sum-need_sum)/total_sum)*(1/rate_of_using_material)*10
 
 		order_code_result_list.append(temp_list)
 		result_df =  pd.DataFrame(columns =['제품코드','조합량','주문량','필요생산량(<0:추가생산량)','투입 원자재','','',''],\
@@ -928,15 +924,15 @@ class Engine:
 		self.result_list.append([result_score, combi_df, result_df])
 
 
-	def start_combi(self,big_group_name):
-		selected_list, temp_order_group_data, temp_material_group_data, avg_score = self.get_combination(big_group_name)
-		self.get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score)
+	def start_combi(self,big_group_name,residual_rate):
+		selected_list, temp_order_group_data, temp_material_group_data, avg_score, rate_of_using_material\
+		 					= self.get_combination(big_group_name,residual_rate)
+		self.get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
 
-
-	def run_thread(self,big_group_name,num_of_thread):
+	def run_thread(self,big_group_name="",num_of_thread=1,residual_rate=0.3):
 		threads = []
 		for i in range(num_of_thread):
-			th = threading.Thread(target=self.start_combi, args=(big_group_name,))
+			th = threading.Thread(target=self.start_combi, args=(big_group_name,residual_rate))
 			threads.append(th)
 
 		for i in range(num_of_thread):
@@ -951,7 +947,7 @@ class Engine:
 		for i in range(1,len(self.result_list)):
 			if best_result[0] < self.result_list[i][0]:
 				best_result = self.result_list[i]
-			print(self.result_list[i][0])
+			#print(self.result_list[i][0])
 
 		return best_result
 

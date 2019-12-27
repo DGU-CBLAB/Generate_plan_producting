@@ -21,7 +21,6 @@ def reset_count(select_list, temp_list):
                         temp_list[3][j] = select_list[i][3][k]
 
     temp_list[1] = min(temp_list[3])
-
     return temp_list
 
 def check_material(material_company,material_temper,material_thickness,order_material,order_temper,order_thickness):
@@ -253,7 +252,7 @@ def get_mim_width(num,thickness,alloy,detail_code):
         elif num == 3:
             return 30
         else:
-            return 60 #+ (num-4)*5
+            return 60
 
     elif detail_code == '박박':
         if num == 1:
@@ -263,7 +262,7 @@ def get_mim_width(num,thickness,alloy,detail_code):
         elif num == 3:
             return 50
         else:
-            return 60 #+ (num-4)*10
+            return 60
     elif detail_code == '후박':
         if num == 1:
             return 35
@@ -272,7 +271,7 @@ def get_mim_width(num,thickness,alloy,detail_code):
         elif num == 3:
             return 60
         else:
-            return 70 #+ (num-4)*10
+            return 70
 
     elif thickness <= 12 and alloy == 'CG':
         if num ==1:
@@ -280,7 +279,7 @@ def get_mim_width(num,thickness,alloy,detail_code):
         elif num ==(2 or 3):
             return 40
         else:
-            return 60 #+ (num-4)*5
+            return 60
 
     elif thickness <=13.5  and (alloy == 'AC'or alloy == 'AE'):
         if num == 1:
@@ -290,7 +289,7 @@ def get_mim_width(num,thickness,alloy,detail_code):
         elif num == 3:
             return 60
         else:
-            return 70 #+ (num-4)*10
+            return 70
 
     else:
         if num == 1:
@@ -302,10 +301,10 @@ def get_mim_width(num,thickness,alloy,detail_code):
         elif num ==4:
             return 60
         else:
-            return 70 #+ (num-5)*10
+            return 70
 
 def check_doubling(doubling_code):
-    if doubling_code == 'G' or doubling_code == 'B':
+    if doubling_code == 'G' or doubling_code == 'M': #G M
         return True
     else:
         return False

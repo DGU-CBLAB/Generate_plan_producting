@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 from PyQt5.QtWidgets import *
 from datetime import datetime
+from copy import deepcopy
 
 class MyWindow(QWidget):
 	def __init__(self, option_num = 1):
@@ -27,6 +28,9 @@ class MyWindow(QWidget):
 		self.alloy_list=[]
 		alloy = ["A1050","A1235","A1100","A8079","A3003","A8021","F308","F309","BRW04"]
 
+		# Create textbox
+		self.textbox1 = QLineEdit("시뮬레이션 횟수",self)
+		self.textbox2 = QLineEdit("추가 생산량 비율",self)
 
 		for i in alloy:
 			self.alloy_list.append(QCheckBox(i, self))
@@ -39,15 +43,21 @@ class MyWindow(QWidget):
 		self.btn2.setCheckable(True)
 		self.btn2.clicked.connect(self.toXLS)
 
-		self.label = QLabel()
+		self.label1 = QLabel(self)
+		self.label1.setText("시뮬레이션 횟수")
+		self.label2 = QLabel(self)
+		self.label2.setText("추가 생산량 비율(소수점 단위로 입력 ex)0.3 )")
 
 		layout = QVBoxLayout()
 		layout.addWidget(self.orderButton)
 		layout.addWidget(self.materialButton)
+		layout.addWidget(self.label1)
+		layout.addWidget(self.textbox1)
+		layout.addWidget(self.label2)
+		layout.addWidget(self.textbox2)
 		for i in range(len(alloy)):
 			layout.addWidget(self.alloy_list[i])
 
-		layout.addWidget(self.label)
 		layout.addWidget(self.btn1)
 		layout.addWidget(self.btn2)
 
@@ -66,12 +76,15 @@ class MyWindow(QWidget):
 		if(self.order_file_name!='' and self.material_file_name!=''):
 			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0])
 			self.e.read_file()
-			for i in select_alloy_list:
-				self.e.run_thread(i,20)
-				self.result_list.append([i,self.e.select_best_result()])
-				#selected_list, temp_order_group_data, temp_material_group_data = e.get_combination(i)
-				#combi_df,result_df = e.get_result_data(selected_list, temp_order_group_data,temp_material_group_data)
-				#self.result_list.append([i,combi_df,result_df])
+			for i in range(len(select_alloy_list)):
+				temp_e = deepcopy(self.e)
+				num_of_thread = int(self.textbox1.text())
+				rate_of_residaul = float(self.textbox2.text())
+				print(rate_of_residaul)
+				temp_e.run_thread(select_alloy_list[i],num_of_thread,rate_of_residaul)
+				self.result_list.append([select_alloy_list[i],temp_e.select_best_result()])
+				del temp_e
+				#self.e.save_excel(i,self.e.select_best_result())
 
 			QMessageBox.about(self, "알림창", "성공적으로 조합하셨습니다.")
 		else:
@@ -80,7 +93,9 @@ class MyWindow(QWidget):
 	def toXLS(self):
 		if(self.result_list != []):
 			for i in range(len(self.result_list)):
+				#print(self.result_list[i][0],self.result_list[i][1])
 				self.e.save_excel(self.result_list[i][0],self.result_list[i][1])
+
 			QMessageBox.about(self, "알림창", "성공적으로 저장하셨습니다.")
 		else:
 			QMessageBox.about(self, "알림창", "조합하지 않으셨습니다.")
