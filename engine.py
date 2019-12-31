@@ -324,7 +324,7 @@ class Engine:
 								sum_count += prob
 							## 횟수 모두 사용한 경우: 최초에 횟수가 10 이상일 경우 확률 1로 값 부여
 							elif (temp_order_group_data['addition_횟수'][j] == 0 and\
-								temp_order_group_data['const_횟수'][j] > 15):
+								temp_order_group_data['const_횟수'][j] > 10):
 
 								count_index.append((1,j))
 								max_index_count += 1
@@ -333,7 +333,7 @@ class Engine:
 						temp_width_list=[]
 						temp_index_list=[]
 						temp_count_list=[]
-
+						sum_count *= 2
 						## 횟수가 양수일 경우 -> elements(조합) 구함
 						if sum_count >0:
 
@@ -454,7 +454,7 @@ class Engine:
 										for l in range(len(combi_count_list[i][j])):
 											zero_list.append(0)
 
-										if temp_real_weight <= processed_weight*1.05 and temp_real_weight < material_weight:
+										if temp_real_weight <= processed_weight*1.02 and temp_real_weight < material_weight:
 									    	#무게, 횟수, index_list, count_list, combi_width_list, 추가 count_list ,가로 손실 길이 ,낭비량
 											temp_realweight_list.append([temp_real_weight,k+1,combi_index_list[i][j],\
 																		combi_count_list[i][j],combi_width_list[i][j],zero_list,\
@@ -476,19 +476,8 @@ class Engine:
 					else:
 						#elements 조합 시작 -> set 생성
 
-					    #원자재 무게보다 많이 나가는 조합 버림
-						#for i in range(len(sorted_realweight_list)):
-						#	del_index=0
-						#	for j in range(len(sorted_realweight_list[i])):
-						#		if sorted_realweight_list[i][j][0] > processed_weight:
-						#			del_index = j
-						#		else:
-						#			sorted_realweight_list[i] = sorted_realweight_list[i][del_index:len(sorted_realweight_list[i])]
-						#			break;
-
 					    ## 초기 잔여량은 원자재 사용 무게 / 무게 순으로 sort
 						select_residual=CONST_OUT_OF_COUNT_NUM
-					    	#select_addition_weight=0
 						select_list=[]
 						sorted_realweight_list.sort(reverse=True)
 						start_combi=True
@@ -499,7 +488,7 @@ class Engine:
 						##max_count 설정
 						#print("processed_weight",processed_weight)
 						for i in range(len(sorted_realweight_list)):
-							max_count += len(sorted_realweight_list[i])#*len(sorted_realweight_list[i])
+							max_count += len(sorted_realweight_list[i])*len(sorted_realweight_list[i])
 
 						count = -1
 						max_count *=2
@@ -513,7 +502,7 @@ class Engine:
 							temp_combi_weight = 0
 							temp_extra_width = 0
 
-							while(combi_count<3 and temp_try_count<10):
+							while(combi_count<3 and temp_try_count<100):
 
 								temp_try_count += 1
 								i = random.randrange(0,len(sorted_realweight_list))
@@ -532,7 +521,7 @@ class Engine:
 										break;
 
 								#추가로 더 넣을 수 있는지 확인
-								if temp_total_extra -(sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1]) >= -processed_weight*0.05 \
+								if temp_total_extra -(sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1]) >= -processed_weight*0.02 \
 									and (not check_overlap_index):
 									temp_list.append(deepcopy(sorted_realweight_list[i][j]))
 									temp_total_extra -= (sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1])
@@ -549,8 +538,9 @@ class Engine:
 						for i in range(len(temp_list)):
 						    for j in range(len(temp_list[i][2])):
 						        k = temp_list[i][2][j]
-						        if temp_order_group_data['횟수'][k] == temp_order_group_data['const_횟수'][k] :#or \
-						            #(temp_order_group_data['횟수'][j] >5 and temp_order_group_data['횟수'][j] <9):#생산량이 애매하게 남은 것들도 생산
+						        if temp_order_group_data['횟수'][k]/temp_order_group_data['const_횟수'][k] >= 0.5:
+								#temp_order_group_data['횟수'][k] == temp_order_group_data['const_횟수'][k] or \
+									#(temp_order_group_data['횟수'][j] >5 and temp_order_group_data['횟수'][j] <9):#생산량이 애매하게 남은 것들도 생산
 						            used = False
 						            break;
 						        #elif (temp_order_group_data['횟수'][j] <3):
@@ -585,11 +575,15 @@ class Engine:
 
 						            if temp_total_extra - (addition_weight+addition_residual) <= 0:
 										## 원자재 무게를 넘어갈 경우 그전 추가생산량으로 처리
-						                if temp_total_extra -(addition_weight+addition_residual) >= -processed_weight*0.05:
+						                if temp_combi_weight+temp_sum_redisual+(addition_weight+addition_residual) <= material_weight*0.98:
+										#temp_total_extra -(addition_weight+addition_residual) < -processed_weight*0.02\
+											#and temp_combi_weight+temp_sum_redisual+(addition_weight+addition_residual) < material_weight:
+
 						                    addition_count = pre_count
 						                    addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,pre_count)/1000)
 						                    addition_weight = round(utils.realWeight(thickness,temp_sum_width,temp_length,1,pre_count)/1000)
 						                break;
+
 						            else:
 						                pre_count = addition_count
 
@@ -634,7 +628,8 @@ class Engine:
 												#100*(addition_weight/processed_weight)
 
 						#새로운 조합이 더 좋을 경우
-						# 점수 비교
+
+						#점수 비교
 						if best_score < temp_score:
 						    ##중복 index 확인
 						    no_overlap = True
@@ -645,38 +640,33 @@ class Engine:
 
 						    if temp_index_list != list(set(temp_index_list)): #다른 조합간에 겹치는 index 존재할 경우
 						        temp_index_list = list(set(temp_index_list)) #중복 제거 list
-						        test_dict = {}
+						        temp_dict = {}
 						        for i in temp_index_list: #dict 초기화
-						            test_dict[i] = 0
+						            temp_dict[i] = 0
 
 						        for i in range(len(temp_list)):
 						            for j in range(len(temp_list[i][2])):
-						                test_dict[temp_list[i][2][j]] += temp_list[i][1] #각 index가 얼마나 사용되지 입력
+						                temp_dict[temp_list[i][2][j]] += temp_list[i][1] #각 index가 얼마나 사용되지 입력
 
-
-						        for i in test_dict.keys():
-						            if temp_order_group_data['횟수'][i] < test_dict[i]:#조합에서 사용되는 양이 사용 가능한 양보다 많을 경우
-						                #temp_score -= (test_dict[i]-temp_order_group_data['횟수'][i])*2
+						        for i in temp_dict.keys():
+						            if temp_order_group_data['횟수'][i] < temp_dict[i]:#조합에서 사용되는 양이 사용 가능한 양보다 많을 경우
 						                no_overlap = False
 						                break
-						    #temp_sum = 0
-						    #for i in range(len(temp_list)):
-						    #	temp_sum +=temp_list[i][0]
 
-						    if no_overlap:# and temp_sum <= processed_weight:
+						    if no_overlap:
 						        combi_weight = temp_combi_weight
 						        best_score = temp_score
 						        select_residual = temp_total_residual
 						        select_list = deepcopy(temp_list)
 
-
 						    ## total_best 초기화
 						if total_best_score < best_score or len(total_best_select_list)==0:
-							temp_sum = 0
+							temp_weight_sum = 0
 							for i in range(len(select_list)):
-								temp_sum +=select_list[i][0]
+								temp_weight_sum += (select_list[i][0]+select_list[i][-1])
 
-							if temp_sum <= processed_weight*1.05 and temp_sum < material_weight :
+
+							if temp_weight_sum <= material_weight*0.98:
 								total_best_score = best_score
 								total_best_select_list = deepcopy(select_list)
 								total_best_material_index = n
@@ -694,17 +684,12 @@ class Engine:
 						need_new_material +=1
 						combi_try_count +=1
 
-					#elif (standard_score<=total_best_score) and len(total_best_select_list)>0 and one_more > 1:
-					#	pre_scoure = standard_score
-					#	standard_score = total_best_score + math.log((120-standard_score)/(120-total_best_score))
-					#	one_more += (pre_scoure/standard_score)#*(combi_try_count/len(temp_material_group_data))
-
 					elif standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
 						#self.compare_list.append([total_best_score,combi_try_count,len(temp_material_group_data)])
 					#	one_more = 0
 						need_new_material = 0
 
-						## 재설정
+						## best list 입력
 						select_list = deepcopy(total_best_select_list)
 						best_score = total_best_score
 						n = total_best_material_index
@@ -784,9 +769,9 @@ class Engine:
 							holding_material.remove(n)
 						except:
 							pass
-
 						standard_score += math.log((110-standard_score)/(120-total_best_score))
 						combi_try_count +=1
+
 		#len(temp_material_group_data)/len(selected_list)는 얼만큼 원자재를 많이 사용했는지 나타냄
 		rate_of_using_material=len(selected_list)/len(temp_material_group_data)
 		return selected_list, temp_order_group_data ,temp_material_group_data, (SUM_OF_SCOURE/SUM_OF_SCOURE_COUNT), rate_of_using_material
@@ -917,7 +902,7 @@ class Engine:
 
 		##result score 계산
 		#((total_sum-need_sum)/(total_sum*len(selected_list))
-		result_score = 50-50*((need_sum/total_sum) + (extra_sum/(total_sum-need_sum)) + (residual_sum/(total_sum-need_sum))) \
+		result_score = 50-(50*(need_sum/total_sum) + 30*(extra_sum/(total_sum-need_sum)) + 20*(residual_sum/(total_sum-need_sum))) \
 						+ avg_score/2#+((total_sum-need_sum)/total_sum)*(1/rate_of_using_material)*10
 
 		order_code_result_list.append(temp_list)
