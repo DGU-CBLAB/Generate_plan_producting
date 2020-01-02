@@ -4,7 +4,7 @@ from copy import deepcopy
 
 e = eg.Engine('./data/폭조합용 세부자료_V2_190916.xls','./data/원자재내역.XLS')
 e.read_file()
-alloy = ["A1235"]#,,"A8079","A3003","A8021","F308","F309","BRW04"]
+alloy = ["A8021"]#,"A1050","A1100","A8079",,"A8079","A3003","A8021","F308","F309","BRW04"]
 start = time.time()
 for i in alloy:
     temp_e = deepcopy(e)

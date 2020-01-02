@@ -448,18 +448,14 @@ class Engine:
 
 								for k in range(min_repeat_count):
 									if (doubing and (k+1)%2 ==0) or (not doubing): ##더블링 조건에 맞게 무게 계산
-									    ## 낭비량 계산
+									    ## 낭비, 생산량 계산
 										temp_residual = round(utils.realWeight(thickness,material_width-temp_sum_width,temp_length,1,k+1)/1000,2)
-										#print(temp_sum_width, thickness)
-
 										temp_real_weight = round(utils.realWeight(thickness,temp_sum_width,temp_length,1,k+1)/1000,2)
 										zero_list = []
 										for l in range(len(combi_count_list[i][j])):
 											zero_list.append(0)
 
 										if temp_real_weight+temp_residual < material_weight:
-
-											#print(material_weight,temp_real_weight+temp_residual)
 									    	#무게, 횟수, index_list, count_list, combi_width_list, 추가 count_list ,가로 손실 길이 ,낭비량
 											temp_realweight_list.append([temp_real_weight,k+1,combi_index_list[i][j],\
 																		combi_count_list[i][j],combi_width_list[i][j],zero_list,\
@@ -566,8 +562,8 @@ class Engine:
 										addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,temp_addition_count)/1000,2)
 
 										if temp_total_extra - (addition_weight+addition_residual) <= 0:
-												## 원자재 무게를 넘어갈 경우 그전 추가생산량으로 처리
-											if temp_combi_weight+temp_sum_redisual+(addition_weight+addition_residual) > processed_weight :
+											## 원자재 무게를 넘어갈 경우 그전 추가생산량으로 처리
+											if temp_combi_weight+temp_sum_redisual+(addition_weight+addition_residual) >= material_weight:
 												temp_addition_count = pre_count
 												addition_residual = round(utils.realWeight(thickness,temp_list[min_index][-2],temp_length,1,pre_count)/1000,2)
 												addition_weight = round(utils.realWeight(thickness,temp_sum_width,temp_length,1,pre_count)/1000,2)
@@ -596,17 +592,17 @@ class Engine:
 								temp_total_residual =(temp_total_extra-addition_weight+addition_residual)
 								temp_combi_weight += addition_weight
 
-								addition_count = 0
+								total_addition_count = 0
 								combi_total_count = 0
 
 								for i in range(len(temp_list)):
 									combi_total_count += temp_list[i][1]*len(temp_list[i][2])
-									addition_count += -utils.sum_list(temp_list[i][5])
+									total_addition_count += -utils.sum_list(temp_list[i][5])
 
 								## special_addition_count_list 계산
 								if len(special_addition_count_list)!=0:
 									for i in range(len(special_addition_count_list)):
-										addition_count +=\
+										total_addition_count +=\
 										(special_addition_count_list[i][0]-temp_order_group_data['횟수'][special_addition_count_list[i][1]])
 
 								used_material = 0;
@@ -616,7 +612,8 @@ class Engine:
 
 								## 추가 생산 적당한지 계산
 								temp_dict = utils.index_count_dict(temp_list)
-
+								addidion_temp_dict = utils.index_count_dict(temp_list)
+								#print(addidion_temp_dict)
 								possible_count = True
 								for i in range(len(temp_list)):
 								    for j in range(len(temp_list[i][2])):
@@ -625,21 +622,22 @@ class Engine:
 								    	current_count = temp_order_group_data['횟수'][k]
 								    	const_count = temp_order_group_data['const_횟수'][k]
 								    	used_count = const_count - current_count
-								    	expected_count = used_count+non_additional_index_count+addition_count
+								    	addition_count = addidion_temp_dict[k]
+
+								    	expected_count = used_count+non_additional_index_count + addition_count
+										#print()
 								    	if (expected_count)/const_count > 1+RESIDUAL_RATE and current_count != const_count:
 								    		possible_count = False
+
+								    	if current_count == const_count: ## 한 번도 생산하지 않은 것은 강제로 생산
+								    		break
 								## 추가 생산량
 								if possible_count:
 								    temp_score = 100 - (50*((temp_total_residual/processed_weight)+2*(temp_extra_width/100))\
-								                        +temp_extra_width*((combi_count-1)/3)+30*(addition_count/combi_total_count))#+300*used_material)
+								                        +temp_extra_width*((combi_count-1)/3)+30*(total_addition_count/combi_total_count))#+300*used_material)
 														#100*(addition_weight/processed_weight)
 									## best 조합 선택
 								    if total_best_score < temp_score:
-								    	#temp_weight_sum = 0
-								    	#for i in range(len(temp_list)):
-								    	#	temp_weight_sum += (temp_list[i][0]+temp_list[i][-1])
-
-								    	#if temp_weight_sum < material_weight:
 									    total_best_score = temp_score
 									    total_best_select_list = deepcopy(temp_list)
 									    total_best_material_index = n
@@ -652,12 +650,13 @@ class Engine:
 							combi_try_count +=1
 							standard_score -=1
 
-						elif combi_try_count > len(temp_material_group_data): #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
+						elif combi_try_count > len(temp_material_group_data)*1.5: #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
 							#self.compare_list.append([total_best_score,combi_try_count,len(temp_material_group_data)])
 						#	one_more = 0
-							print("make~~~")
-							print(total_best_select_list)
+							#print("make~~~")
+							#print(total_best_select_list)
 							need_new_material =-100
+
 							## best list 입력
 							select_list = deepcopy(total_best_select_list)
 							best_score = total_best_score
