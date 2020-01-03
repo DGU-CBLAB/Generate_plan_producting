@@ -155,7 +155,7 @@ def expectSumRealweight(realweight_list):
 def calculateRest(input_realweight,sum_realweight):
     return round(input_realweight-sum_realweight)
 
-def index_count_dict(temp_list):
+def index_count_dict(temp_list,version='normal'):
     temp_index_list = []
     temp_dict = {}
     for i in range(len(temp_list)):
@@ -168,23 +168,10 @@ def index_count_dict(temp_list):
 
     for i in range(len(temp_list)):
         for j in range(len(temp_list[i][2])):
-            temp_dict[temp_list[i][2][j]] += temp_list[i][1] #각 index가 얼마나 사용되지 입력
-    return temp_dict
-
-def addition_index_count_dict(temp_list):
-    temp_index_list = []
-    temp_dict = {}
-    for i in range(len(temp_list)):
-        temp_index_list +=list(set(temp_list[i][2])) #사용되는 index list(중복 제거)
-
-    #if temp_index_list != list(set(temp_index_list)): #다른 조합간에 겹치는 index 존재할 경우
-    temp_index_list = list(set(temp_index_list)) #중복 제거 list
-    for i in temp_index_list: #dict 초기화
-        temp_dict[i] = 0
-
-    for i in range(len(temp_list)):
-        for j in range(len(temp_list[i][2])):
-            temp_dict[temp_list[i][2][j]] -= temp_list[i][5][j] #각 index가 얼마나 사용되지 입력
+            if version == 'normal':
+                temp_dict[temp_list[i][2][j]] += temp_list[i][1] #각 index가 얼마나 사용되지 입력
+            elif version =='addition':
+                temp_dict[temp_list[i][2][j]] -= temp_list[i][5][j] #각 index가 얼마나 사용되지 입력
 
     return temp_dict
 
