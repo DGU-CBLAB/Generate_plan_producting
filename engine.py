@@ -637,7 +637,7 @@ class Engine:
 
 								## 추가 생산량
 								if possible_count:
-								    temp_score = 100 - (100*(temp_extra_width/100)+30*(temp_total_residual/processed_weight)\
+								    temp_score = 100 - (50*(temp_extra_width/100)+30*(temp_total_residual/processed_weight)\
 								                        +20*((combi_count-1)/3)+30*sum_each_addition_rate)#+300*used_material)
 														#100*(addition_weight/processed_weight)
 									## best 조합 선택
