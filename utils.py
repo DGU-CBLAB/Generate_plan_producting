@@ -138,7 +138,7 @@ def calculateRepeat(thickness,width,length,goal_weight):
     repeat = 0
     corrent_weight =0
     goal_weight *=1000
-    while(corrent_weight<=goal_weight):
+    while (corrent_weight<=goal_weight):
         repeat+=1
         corrent_weight = realWeight(thickness,width,length,1,repeat)
     return repeat

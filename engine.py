@@ -32,7 +32,6 @@ class Engine:
 
     #재고기반 grouping
 	def process_data(self):
-
 		## data sorting
 		self.material_data = self.material_data.sort_values(by=['ALLOY','TEMPER','포장중량','실폭','생산일자'],ascending=False).reset_index()
 		self.order_data = self.order_data.fillna(0)
@@ -59,7 +58,6 @@ class Engine:
 			self.order_data['횟수'][i] = repeat
 
 		self.order_data['const_횟수'] = self.order_data['횟수']
-		self.order_data['const_addition_횟수'] = 0
 		self.order_data['addition_횟수'] = 0
 		self.order_data = self.order_data.sort_values(by=['ALLOY_1','권취','TEMPER','원자재_M','원자재_T','두께','길이(기준)','내경','코아','폭'],\
 				                      ascending=False).reset_index(drop=True)
@@ -186,8 +184,6 @@ class Engine:
 
 		SUM_OF_SCOURE = 0
 		SUM_OF_SCOURE_COUNT = 0
-		temp_order_group_data['횟수'] = temp_order_group_data['const_횟수']
-		temp_order_group_data['addition_횟수'] = 0
 
 		#랜덤으로 값 추출
 		#조합 가능한 폭 list
@@ -218,7 +214,7 @@ class Engine:
 			combi_try_count = -1
 			standard_score = 100
 
-			n= -1
+			n = -1
 			total_best_score = -CONST_OUT_OF_COUNT_NUM
 			total_best_select_list = []
 			total_best_material_index = -1
@@ -285,7 +281,7 @@ class Engine:
 						break
 
 				#새로운 원자재를 구매해야하는 경우
-				if need_new_material >len(temp_material_group_data)*3 :#and combi_try_count > len(temp_material_group_data)*2:
+				if need_new_material >len(temp_material_group_data)*1.5 :#and combi_try_count > len(temp_material_group_data)*2:
 					break;
 
 				if new_material:
@@ -295,7 +291,7 @@ class Engine:
 					combi_width_list=[]
 					combi_index_list=[]
 					combi_count_list=[]
-					for i in range(start_index,end_index):  #'권취','TEMPER','두께' 일치
+					for i in range(start_index,end_index):  #'권취','TEMPER','두께' 일치 (middle group)
 
 						max_index_count = 0
 
@@ -320,7 +316,7 @@ class Engine:
 								count_index.append((prob,j))
 								sum_count += prob
 							## 횟수 모두 사용한 경우: 확률 1로 값 부여
-							elif temp_order_group_data['addition_횟수'][j] == 0:
+							elif -temp_order_group_data['addition_횟수'][j]/temp_order_group_data['const_횟수'][j] < RESIDUAL_RATE:
 								count_index.append((1,j))
 								max_index_count += 1
 								sum_count += 1
@@ -341,7 +337,7 @@ class Engine:
 							max_index_count =sum_count*2
 
 							while (index_count < max_index_count and material_width >= min_width+initial_mim_width):
-								#'ALLOY','권취','TEMPER','두께','길이','내경','코아','폭' 일치
+								#'ALLOY','권취','TEMPER','두께','길이','내경','코아','폭' 일치 (small group)
 								temp_width_list.append([])
 								temp_index_list.append([])
 								temp_count_list.append([])
@@ -467,10 +463,6 @@ class Engine:
 					    standard_score -= 1
 					    need_new_material +=1
 					    combi_try_count +=1
-					    try:
-					    	holding_material.remove(n)
-					    except:
-					    	pass
 					else:
 						#elements 조합 시작 -> set 생성
 					    ## 초기 잔여량은 원자재 사용 무게 / 무게 순으로 sort
@@ -509,7 +501,7 @@ class Engine:
 									i = random.randrange(0,len(sorted_realweight_list))
 									j = random.randrange(0,len(sorted_realweight_list[i]))
 
-								    ## overlap check
+								    ## overlap check: 이미 동일한 조합 존재할 경우 선택하지 않음
 									check_overlap_index = False
 									temp_select_index = deepcopy(sorted_realweight_list[i][j][2])
 									temp_select_index.sort()
@@ -533,6 +525,7 @@ class Engine:
 
 								temp_score = -CONST_OUT_OF_COUNT_NUM
 								temp_addition_weight = 0
+
 							if len(temp_list) >0 :
 								pre_count = 0
 								temp_addition_count = 1
@@ -601,10 +594,10 @@ class Engine:
 										total_addition_count +=\
 										(special_addition_count_list[i][0]-temp_order_group_data['횟수'][special_addition_count_list[i][1]])
 
-								used_material = 0;
-								for i in selected_material:
-									if n == i:
-										used_material = 1;
+								#used_material = 0;
+								#for i in selected_material:
+								#	if n == i:
+								#		used_material = 1;
 
 								## 각각의 추가 생산 비율의 합으로 점수 계산
 								sum_each_addition_rate = 0
@@ -642,6 +635,7 @@ class Engine:
 														#100*(addition_weight/processed_weight)
 									## best 조합 선택
 								    if total_best_score < temp_score:
+
 									    total_best_score = temp_score
 									    total_best_select_list = deepcopy(temp_list)
 									    total_best_material_index = n

@@ -7,14 +7,14 @@ e.read_file()
 alloy = ["A1235"]#,"A1050","A1100","A8079",,"A8079","A3003","A8021","F308","F309","BRW04"]
 start = time.time()
 overlap = True
-title = "중복붏허"
+title = "중복불허"
 
 if overlap:
     title = "중복허용"
 
 for i in alloy:
     temp_e = deepcopy(e)
-    residual_rate = 0.3
+    residual_rate = 0.1 #추가 비율
     num_of_thread = 1
     if num_of_thread>8:
         num_of_loop = int(num_of_thread/8)
@@ -22,7 +22,7 @@ for i in alloy:
         remainder = num_of_thread%8
         print(remainder)
         for j in range(num_of_loop):
-            temp_e.run_thread(i,8,residual_rate,overlap)
+            temp_e.run_thread(i,8,residual_rate,overlap) #alloy name, 추가 생산비율, 중복허용여부
         temp_e.run_thread(i,remainder,residual_rate,overlap)
 
     else:
@@ -32,9 +32,3 @@ for i in alloy:
     best_result = temp_e.select_best_result()
     del temp_e
     e.save_excel(i,best_result,title)
-
-
-#e.run_thread('A1050',1)
-#print("finish! How long time: ",time.time()-start)
-#best_result = e.select_best_result()
-#e.save_excel('A1050',best_result)
