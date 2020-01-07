@@ -14,7 +14,7 @@ if overlap:
 
 for i in alloy:
     temp_e = deepcopy(e)
-    residual_rate = 0.1 #추가 비율
+    residual_rate = 0.3 #추가 비율
     num_of_thread = 1
     if num_of_thread>8:
         num_of_loop = int(num_of_thread/8)

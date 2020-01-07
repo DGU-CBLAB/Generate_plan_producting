@@ -334,7 +334,7 @@ class Engine:
 
 							min_width = temp_order_group_data['폭'][small_group_index_end-1]
 							initial_mim_width = utils.get_mim_width(1,thickness,material_alloy,detail_code)
-							max_index_count =sum_count*2
+							max_index_count =sum_count
 
 							while (index_count < max_index_count and material_width >= min_width+initial_mim_width):
 								#'ALLOY','권취','TEMPER','두께','길이','내경','코아','폭' 일치 (small group)
@@ -469,22 +469,33 @@ class Engine:
 						sorted_realweight_list.sort(reverse=True)
 						best_score = -CONST_OUT_OF_COUNT_NUM
 						max_count = 1
+						i_index_list = []
+						j_index_list = []
 
-						##max_count 설정
+
+						## 길이 조합의 경우
+						## 길이의 비례하여 랜덤값 할당
 						for i in range(len(sorted_realweight_list)):
-							max_count += len(sorted_realweight_list[i])
+							temp_length_max = len(sorted_realweight_list[i])
+							max_count += temp_length_max
+							temp_j_index_prob_sum = 0
+							for j in range(len(sorted_realweight_list[i])):
+								temp_j_index_prob_sum += sorted_realweight_list[i][j][1]
+							i_index_list.append([temp_length_max, i, temp_j_index_prob_sum])  ##[최대 길이 수, index, j_index_분모]
+
 
 						best_temp_list = []
 						combi_count = 0
 						temp_best_score = -CONST_OUT_OF_COUNT_NUM
 
-						try_total_count = max_count
+						try_total_count = len(sorted_realweight_list)*2
 
-						## 길이(무게) 고려하여 조합
+						## 길이 조합 시작
 						while try_total_count >0:
 							try_total_count -=1
 
 							count = -1
+
 							while(count<max_count):
 								count+=1
 								temp_list = []
@@ -495,11 +506,25 @@ class Engine:
 								temp_combi_weight = 0
 								temp_extra_width = 0
 
-								while(combi_count<3 and temp_try_count<50):
+								while combi_count < min(3,len(sorted_realweight_list)) \
+								 		and temp_try_count<min(10,max_count):
 
 									temp_try_count += 1
-									i = random.randrange(0,len(sorted_realweight_list))
-									j = random.randrange(0,len(sorted_realweight_list[i]))
+									i = -1; j = -1;
+									rand = random.randrange(0,max_count)
+									for k in range(len(i_index_list)):
+										rand -= i_index_list[k][0]
+										if rand < 0:
+											i = i_index_list[k][1] ## i_index 설정
+											rand = random.randrange(0,i_index_list[k][2]) ## j random range
+											for g in range(len(sorted_realweight_list[i])):
+												rand -= sorted_realweight_list[i][g][1]
+												if rand < 0:
+													j = g
+													break
+
+									#i = random.randrange(0,len(sorted_realweight_list))
+									#j = random.randrange(0,len(sorted_realweight_list[i]))
 
 								    ## overlap check: 이미 동일한 조합 존재할 경우 선택하지 않음
 									check_overlap_index = False
