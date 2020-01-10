@@ -196,6 +196,7 @@ class Engine:
 
 		print("@@@@@@@@@@@@@@@@@@@@@current_big_group_name: ", current_big_group_name)
 		for r in range(0,len(middle_group_index)-1):
+			print("진행률: ",r/(len(middle_group_index)-1))
 			start_index=0
 			end_index = 0
 
@@ -468,30 +469,30 @@ class Engine:
 					    ## 초기 잔여량은 원자재 사용 무게 / 무게 순으로 sort
 						sorted_realweight_list.sort(reverse=True)
 						best_score = -CONST_OUT_OF_COUNT_NUM
-						max_count = 1
-						i_index_list = []
-						j_index_list = []
+						max_count = 0
+						#i_index_list = []
+						#j_index_list = []
+
 
 
 						## 길이 조합의 경우
 						## 길이의 비례하여 랜덤값 할당
 						for i in range(len(sorted_realweight_list)):
-							temp_length_max = len(sorted_realweight_list[i])
+							#temp_length_max = len(sorted_realweight_list[i])
 							max_count += temp_length_max
-							temp_j_index_prob_sum = 0
-							for j in range(len(sorted_realweight_list[i])):
-								temp_j_index_prob_sum += sorted_realweight_list[i][j][1]
-							i_index_list.append([temp_length_max, i, temp_j_index_prob_sum])  ##[최대 길이 수, index, j_index_분모]
+							#temp_j_index_prob_sum = 0
+							#for j in range(len(sorted_realweight_list[i])):
+							#	temp_j_index_prob_sum += sorted_realweight_list[i][j][1]
+							#i_index_list.append([temp_length_max, i, temp_j_index_prob_sum])  ##[최대 길이 수, index, j_index_분모]
 
 
 						best_temp_list = []
 						combi_count = 0
 						temp_best_score = -CONST_OUT_OF_COUNT_NUM
 
-						try_total_count = len(sorted_realweight_list)*2
+						try_total_count = len(sorted_realweight_list)
 
 						## 길이 조합 시작
-						while try_total_count >0:
 							try_total_count -=1
 
 							count = -1
@@ -510,21 +511,20 @@ class Engine:
 								 		and temp_try_count<min(10,max_count):
 
 									temp_try_count += 1
-									i = -1; j = -1;
-									rand = random.randrange(0,max_count)
-									for k in range(len(i_index_list)):
-										rand -= i_index_list[k][0]
-										if rand < 0:
-											i = i_index_list[k][1] ## i_index 설정
-											rand = random.randrange(0,i_index_list[k][2]) ## j random range
-											for g in range(len(sorted_realweight_list[i])):
-												rand -= sorted_realweight_list[i][g][1]
-												if rand < 0:
-													j = g
-													break
-
-									#i = random.randrange(0,len(sorted_realweight_list))
-									#j = random.randrange(0,len(sorted_realweight_list[i]))
+									i = random.randrange(0,len(sorted_realweight_list))
+									j = random.randrange(0,len(sorted_realweight_list[i]))
+									#i = -1; j = -1;
+									#rand = random.randrange(0,max_count)
+									#for k in range(len(i_index_list)):
+									#	rand -= i_index_list[k][0]
+									#	if rand < 0:
+									#		i = i_index_list[k][1] ## i_index 설정
+									#		rand = random.randrange(0,i_index_list[k][2]) ## j random range
+									#		for g in range(len(sorted_realweight_list[i])):
+									#			rand -= sorted_realweight_list[i][g][1]
+									#			if rand < 0:
+									#				j = g
+									#				break
 
 								    ## overlap check: 이미 동일한 조합 존재할 경우 선택하지 않음
 									check_overlap_index = False
@@ -552,6 +552,7 @@ class Engine:
 								temp_addition_weight = 0
 
 							if len(temp_list) >0 :
+
 								pre_count = 0
 								temp_addition_count = 1
 								addition_residual = 0
@@ -569,7 +570,8 @@ class Engine:
 								doubing = utils.check_doubling(temp_order_group_data['권취'][temp_list[min_index][2][0]])
 								temp_length = temp_order_group_data['길이(기준)'][temp_list[min_index][2][0]]
 								temp_sum_width = utils.sum_list(temp_list[min_index][4])
-								    ## 계획을 초과하는 생산하는 횟수 따로 기록
+
+								## 계획을 초과하는 생산하는 횟수 따로 기록
 								while 1:
 									if ((doubing and (temp_addition_count)%2 ==0) or (not doubing)): ##더블링 조건에 맞게 무게 계산
 										addition_weight = round(utils.realWeight(thickness,temp_sum_width,temp_length,1,temp_addition_count)/1000,2)
@@ -655,7 +657,7 @@ class Engine:
 
 								## 추가 생산량
 								if possible_count:
-								    temp_score = 100 - (50*(temp_extra_width/100)+30*(temp_total_residual/processed_weight)\
+								    temp_score = 100 - (30*(temp_extra_width/100)+20*(temp_total_residual/processed_weight)\
 								                        +20*((combi_count-1)/3)+30*sum_each_addition_rate)#+300*used_material)
 														#100*(addition_weight/processed_weight)
 									## best 조합 선택
@@ -673,8 +675,9 @@ class Engine:
 							combi_try_count +=1
 							standard_score -= 5
 
-						elif combi_try_count > len(temp_material_group_data) :#$or standard_score<=total_best_score: #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
-							need_new_material =-100
+						elif combi_try_count > len(temp_material_group_data) or standard_score<=total_best_score: #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
+							need_new_material = -100
+							print("make!!, total_best_score: ",total_best_score)
 							## best list 입력
 							select_list = deepcopy(total_best_select_list)
 							best_score = total_best_score
@@ -740,8 +743,11 @@ class Engine:
 						else:
 							if total_best_score>1:
 								standard_score += math.log((110-standard_score)/(120-total_best_score))*(120/total_best_score)
+							elif total_best_score<-1:
+								standard_score += math.log((110-standard_score)/(120-total_best_score))*abs(total_best_score)
 							else:
 								standard_score += math.log((110-standard_score)/(120-total_best_score))
+
 						combi_try_count +=1
 
 					try:
