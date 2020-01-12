@@ -10,7 +10,7 @@ from copy import deepcopy
 import time
 
 class Engine:
-	def __init__(self,order_file_name="",material_file_name=""):
+	def __init__(self,order_file_name="",material_file_name="",overlap="False"):
 		self.order_file_name=order_file_name
 		self.material_file_name=material_file_name
 		self.material_data = pd.DataFrame()
@@ -22,7 +22,7 @@ class Engine:
 		self.result_list = []
 		self.compare_list = []
 		self.best_result = []
-		self.overlap = False
+		self.overlap = overlap
 
 	def read_file(self):
 		self.order_data = pd.read_excel(self.order_file_name)
@@ -196,7 +196,7 @@ class Engine:
 
 		print("@@@@@@@@@@@@@@@@@@@@@current_big_group_name: ", current_big_group_name)
 		for r in range(0,len(middle_group_index)-1):
-			print("진행률: ",r/(len(middle_group_index)-1))
+			print("진행률: ",(r+1)/(len(middle_group_index)-1))
 			start_index=0
 			end_index = 0
 
@@ -351,7 +351,7 @@ class Engine:
 								num_of_combi = 0
 								pre_mim_width = 0
 
-								while(extra_width >= min_width and try_combi_count<20):
+								while(extra_width >= min_width and try_combi_count<min(10,sum_count)):
 									##횟수에 비례해서 선택
 									rand = random.randrange(0,sum_count)
 									for k in range(len(count_index)):
@@ -470,87 +470,59 @@ class Engine:
 						sorted_realweight_list.sort(reverse=True)
 						best_score = -CONST_OUT_OF_COUNT_NUM
 						max_count = 0
-						#i_index_list = []
-						#j_index_list = []
+						min_weight = 100
 
-
-
-						## 길이 조합의 경우
-						## 길이의 비례하여 랜덤값 할당
 						for i in range(len(sorted_realweight_list)):
-							#temp_length_max = len(sorted_realweight_list[i])
-							max_count += temp_length_max
-							#temp_j_index_prob_sum = 0
-							#for j in range(len(sorted_realweight_list[i])):
-							#	temp_j_index_prob_sum += sorted_realweight_list[i][j][1]
-							#i_index_list.append([temp_length_max, i, temp_j_index_prob_sum])  ##[최대 길이 수, index, j_index_분모]
+							max_count += len(sorted_realweight_list[i])
+							if sorted_realweight_list[i][len(sorted_realweight_list[i])-1][0] < min_weight:
+								min_weight = sorted_realweight_list[i][len(sorted_realweight_list[i])-1][0]
 
-
-						best_temp_list = []
-						combi_count = 0
 						temp_best_score = -CONST_OUT_OF_COUNT_NUM
+						try_total_count = int(len(sorted_realweight_list)*math.sqrt(len(sorted_realweight_list)))
 
-						try_total_count = len(sorted_realweight_list)
-
-						## 길이 조합 시작
+						while try_total_count >0:
 							try_total_count -=1
+							temp_list = []
+							combi_count = 0
+							temp_total_extra = processed_weight
+							temp_sum_redisual = 0
+							temp_try_count = -1
+							temp_combi_weight = 0
+							temp_extra_width = 0
 
-							count = -1
+							## 길이 조합
+							while combi_count < min(3,len(sorted_realweight_list)) \
+							 		and temp_try_count<min(10,max_count) and min_weight < temp_total_extra:
 
-							while(count<max_count):
-								count+=1
-								temp_list = []
-								combi_count = 0
-								temp_total_extra = processed_weight
-								temp_sum_redisual = 0
-								temp_try_count = -1
-								temp_combi_weight = 0
-								temp_extra_width = 0
-
-								while combi_count < min(3,len(sorted_realweight_list)) \
-								 		and temp_try_count<min(10,max_count):
-
-									temp_try_count += 1
-									i = random.randrange(0,len(sorted_realweight_list))
-									j = random.randrange(0,len(sorted_realweight_list[i]))
-									#i = -1; j = -1;
-									#rand = random.randrange(0,max_count)
-									#for k in range(len(i_index_list)):
-									#	rand -= i_index_list[k][0]
-									#	if rand < 0:
-									#		i = i_index_list[k][1] ## i_index 설정
-									#		rand = random.randrange(0,i_index_list[k][2]) ## j random range
-									#		for g in range(len(sorted_realweight_list[i])):
-									#			rand -= sorted_realweight_list[i][g][1]
-									#			if rand < 0:
-									#				j = g
-									#				break
-
-								    ## overlap check: 이미 동일한 조합 존재할 경우 선택하지 않음
-									check_overlap_index = False
-									temp_select_index = deepcopy(sorted_realweight_list[i][j][2])
-									temp_select_index.sort()
-									for a in range(len(temp_list)):
-										for b in range(len(temp_list[a])):
-											temp_check_index_list = deepcopy(temp_list[a][2])
-											temp_check_index_list.sort()
-										if temp_check_index_list == temp_select_index:
-											check_overlap_index = True
-											break;
+								temp_try_count += 1
+								i = random.randrange(0,len(sorted_realweight_list))
+								j = random.randrange(0,len(sorted_realweight_list[i]))
+							    ## overlap check: 이미 동일한 조합 존재할 경우 선택하지 않음
+								check_overlap_index = False
+								temp_select_index = deepcopy(sorted_realweight_list[i][j][2])
+								temp_select_index.sort()
+								for a in range(len(temp_list)):
+									for b in range(len(temp_list[a])):
+										temp_check_index_list = deepcopy(temp_list[a][2])
+										temp_check_index_list.sort()
+									if temp_check_index_list == temp_select_index:
+										check_overlap_index = True
+										break;
 
 									#추가로 더 넣을 수 있는지 확인
-									if temp_total_extra -(sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1]) > -processed_weight*0.1 \
-										and (not check_overlap_index):
-										temp_list.append(deepcopy(sorted_realweight_list[i][j]))
-										temp_total_extra -= (sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1])
-										temp_sum_redisual += sorted_realweight_list[i][j][-1]
-										temp_combi_weight += sorted_realweight_list[i][j][0]
-										temp_extra_width += sorted_realweight_list[i][j][-2]
-										combi_count +=1
+								if temp_total_extra -(sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1]) > -processed_weight*0.1 \
+									and (not check_overlap_index):
+									temp_list.append(deepcopy(sorted_realweight_list[i][j]))
+									temp_total_extra -= (sorted_realweight_list[i][j][0]+sorted_realweight_list[i][j][-1])
+									temp_sum_redisual += sorted_realweight_list[i][j][-1]
+									temp_combi_weight += sorted_realweight_list[i][j][0]
+									temp_extra_width += sorted_realweight_list[i][j][-2]
+									combi_count +=1
 
-								temp_score = -CONST_OUT_OF_COUNT_NUM
-								temp_addition_weight = 0
+							temp_score = -CONST_OUT_OF_COUNT_NUM
+							temp_addition_weight = 0
 
+							## 추가 생산 조합
 							if len(temp_list) >0 :
 
 								pre_count = 0
@@ -571,7 +543,7 @@ class Engine:
 								temp_length = temp_order_group_data['길이(기준)'][temp_list[min_index][2][0]]
 								temp_sum_width = utils.sum_list(temp_list[min_index][4])
 
-								## 계획을 초과하는 생산하는 횟수 따로 기록
+								## 추가 생산
 								while 1:
 									if ((doubing and (temp_addition_count)%2 ==0) or (not doubing)): ##더블링 조건에 맞게 무게 계산
 										addition_weight = round(utils.realWeight(thickness,temp_sum_width,temp_length,1,temp_addition_count)/1000,2)
@@ -634,7 +606,7 @@ class Engine:
 								temp_addidion_dict = utils.index_count_dict(temp_list,'addition')
 
 								possible_count = True
-								non_product = False
+								not_producted_order = False
 								for i in temp_index_dict.keys():
 									non_additional_index_count = temp_index_dict[i]
 									current_count = temp_order_group_data['횟수'][i]
@@ -650,15 +622,16 @@ class Engine:
 										possible_count = False
 
 									if current_count == const_count: ## 한 번도 생산하지 않은 것은 강제로 생산
-										non_product = True
+										not_producted_order = True
 
-								if non_product == True:
+								if not_producted_order == True:
 									possible_count = True
 
-								## 추가 생산량
+								## 추가 생산 가능한 경우 계산
 								if possible_count:
-								    temp_score = 100 - (30*(temp_extra_width/100)+20*(temp_total_residual/processed_weight)\
-								                        +20*((combi_count-1)/3)+30*sum_each_addition_rate)#+300*used_material)
+								    temp_score = 100 - (50*(temp_extra_width/100)\
+														#+20*(temp_total_residual/processed_weight)
+								                        +10*((combi_count-1)/3)+40*sum_each_addition_rate)#+300*used_material)
 														#100*(addition_weight/processed_weight)
 									## best 조합 선택
 								    if total_best_score < temp_score:
@@ -676,8 +649,8 @@ class Engine:
 							standard_score -= 5
 
 						elif combi_try_count > len(temp_material_group_data) or standard_score<=total_best_score: #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
+
 							need_new_material = -100
-							print("make!!, total_best_score: ",total_best_score)
 							## best list 입력
 							select_list = deepcopy(total_best_select_list)
 							best_score = total_best_score
@@ -743,10 +716,8 @@ class Engine:
 						else:
 							if total_best_score>1:
 								standard_score += math.log((110-standard_score)/(120-total_best_score))*(120/total_best_score)
-							elif total_best_score<-1:
-								standard_score += math.log((110-standard_score)/(120-total_best_score))*abs(total_best_score)
 							else:
-								standard_score += math.log((110-standard_score)/(120-total_best_score))
+								standard_score += math.log((110-standard_score)/(120-total_best_score))*abs(total_best_score)
 
 						combi_try_count +=1
 
@@ -903,9 +874,8 @@ class Engine:
 		 					= self.get_combination(big_group_name,residual_rate)
 		self.get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
 
-	def run_thread(self,big_group_name="",num_of_thread=1,residual_rate=0.3,overlap="False"):
+	def run_thread(self,big_group_name="",num_of_thread=1,residual_rate=0.3):
 
-		self.overlap = overlap
 		threads = []
 		for i in range(num_of_thread):
 			th = threading.Thread(target=self.start_combi, args=(big_group_name,residual_rate))

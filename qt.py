@@ -13,6 +13,7 @@ class MyWindow(QWidget):
 		self.material_file_name = ""
 		self.result_list = []
 		self.e = eg.Engine()
+		self.title = "중복불허"
 
 	def setupUI(self):
 
@@ -35,6 +36,7 @@ class MyWindow(QWidget):
 		for i in alloy:
 			self.alloy_list.append(QCheckBox(i, self))
 
+		self.check_overlap = QCheckBox("중복 허용", self)
 		self.btn1 = QPushButton('Start combination', self)
 		self.btn1.setCheckable(True)
 		self.btn1.clicked.connect(self.grouping)
@@ -47,17 +49,25 @@ class MyWindow(QWidget):
 		self.label1.setText("시뮬레이션 횟수")
 		self.label2 = QLabel(self)
 		self.label2.setText("추가 생산량 비율(소수점 단위로 입력 ex)0.3 )")
-
+		self.label3 = QLabel(self)
+		self.label3.setText("조합할 ALLOY 종류를 선택하세요.")
+		self.empty = QLabel(self)
 		layout = QVBoxLayout()
 		layout.addWidget(self.orderButton)
 		layout.addWidget(self.materialButton)
+		layout.addWidget(self.empty)
 		layout.addWidget(self.label1)
 		layout.addWidget(self.textbox1)
+		layout.addWidget(self.empty)
 		layout.addWidget(self.label2)
 		layout.addWidget(self.textbox2)
+		layout.addWidget(self.empty)
+		layout.addWidget(self.check_overlap)
+		layout.addWidget(self.empty)
+		layout.addWidget(self.label3)
 		for i in range(len(alloy)):
 			layout.addWidget(self.alloy_list[i])
-
+		layout.addWidget(self.empty)
 		layout.addWidget(self.btn1)
 		layout.addWidget(self.btn2)
 
@@ -74,15 +84,22 @@ class MyWindow(QWidget):
 
 		##조합 group 계산
 		if(self.order_file_name!='' and self.material_file_name!=''):
-			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0])
+			overlap=False
+			if self.check_overlap.isChecked() == True:
+				overlap = True
+				self.title = "중복허용"
+
+			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0],overlap)
 			self.e.read_file()
+
+
 			for i in range(len(select_alloy_list)):
 				temp_e = deepcopy(self.e)
 				num_of_thread = int(self.textbox1.text())
 				residual_rate = float(self.textbox2.text())
 				if num_of_thread>10:
-					num_of_loop = int(nun_of_thread/10)
-					remainder = nun_of_thread%10
+					num_of_loop = int(num_of_thread/10)
+					remainder = num_of_thread%10
 					for j in range(num_of_loop-1):
 						temp_e.run_thread(select_alloy_list[i],10,residual_rate)
 
@@ -92,7 +109,6 @@ class MyWindow(QWidget):
 
 				self.result_list.append([select_alloy_list[i],temp_e.select_best_result()])
 				del temp_e
-				#self.e.save_excel(i,self.e.select_best_result())
 
 			QMessageBox.about(self, "알림창", "성공적으로 조합하셨습니다.")
 		else:
@@ -101,8 +117,8 @@ class MyWindow(QWidget):
 	def toXLS(self):
 		if(self.result_list != []):
 			for i in range(len(self.result_list)):
-				#print(self.result_list[i][0],self.result_list[i][1])
-				self.e.save_excel(self.result_list[i][0],self.result_list[i][1])
+
+				self.e.save_excel(self.result_list[i][0],self.result_list[i][1],self.title)
 
 			QMessageBox.about(self, "알림창", "성공적으로 저장하셨습니다.")
 		else:
