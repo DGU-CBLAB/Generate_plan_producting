@@ -524,6 +524,8 @@ class Engine:
 
 							## 추가 생산 조합
 							if len(temp_list) >0 :
+								not_additional_temp_list = deepcopy(temp_list)
+								not_additional_sum_redisual = temp_sum_redisual+temp_total_extra
 
 								pre_count = 0
 								temp_addition_count = 1
@@ -577,7 +579,7 @@ class Engine:
 										temp_list[min_index][5][i]= -temp_list[min_index][1]
 
 								### 점수 계산에 필요한 값들 update
-								temp_total_residual =(temp_total_extra-addition_weight+addition_residual)
+								temp_total_residual =temp_sum_redisual+(temp_total_extra-addition_weight+addition_residual)
 								temp_combi_weight += addition_weight
 
 								total_addition_count = 0
@@ -606,7 +608,7 @@ class Engine:
 								temp_addidion_dict = utils.index_count_dict(temp_list,'addition')
 
 								possible_count = True
-								not_producted_order = False
+								#not_producted_order = False
 								for i in temp_index_dict.keys():
 									non_additional_index_count = temp_index_dict[i]
 									current_count = temp_order_group_data['횟수'][i]
@@ -621,25 +623,39 @@ class Engine:
 									if (expected_count)/const_count > 1+RESIDUAL_RATE:
 										possible_count = False
 
-									if current_count == const_count: ## 한 번도 생산하지 않은 것은 강제로 생산
-										not_producted_order = True
+									#if current_count == const_count: ## 한 번도 생산하지 않은 것은 강제로 생산
+									#	not_producted_order = True
 
-								if not_producted_order == True:
-									possible_count = True
+								#if not_producted_order == True:
+								#	possible_count = True
 
 								## 추가 생산 가능한 경우 계산
-								if possible_count:
-								    temp_score = 100 - (50*(temp_extra_width/100)\
-														#+20*(temp_total_residual/processed_weight)
-								                        +10*((combi_count-1)/3)+40*sum_each_addition_rate)#+300*used_material)
-														#100*(addition_weight/processed_weight)
-									## best 조합 선택
-								    if total_best_score < temp_score:
+								if not possible_count:
 
-									    total_best_score = temp_score
-									    total_best_select_list = deepcopy(temp_list)
-									    total_best_material_index = n
-									    total_best_material_realweight = processed_weight
+									non_addtional_temp_score = 100 - (50*(temp_extra_width/100)\
+								                        +10*((combi_count-1)/3)\
+														+50*(not_additional_sum_redisual/processed_weight))
+
+									additional_temp_score = 100 - (50*(temp_extra_width/100)\
+									                        +10*((combi_count-1)/3)\
+															+50*(sum_each_addition_rate+(temp_total_residual/processed_weight)))
+
+									if non_addtional_temp_score > additional_temp_score:
+										temp_list = not_additional_temp_list
+										temp_total_residual = not_additional_sum_redisual
+										sum_each_addition_rate = 0
+
+
+								temp_score = 100 - (50*(temp_extra_width/100)\
+								                        +10*((combi_count-1)/3)\
+														+50*(sum_each_addition_rate+(temp_total_residual/processed_weight)))#+300*used_material)
+														#100*(addition_weight/processed_weight)
+								## best 조합 선택
+								if total_best_score < temp_score:
+									total_best_score = temp_score
+									total_best_select_list = deepcopy(temp_list)
+									total_best_material_index = n
+									total_best_material_realweight = processed_weight
 
 
 						#### 좋은 재료가 없을 경우
