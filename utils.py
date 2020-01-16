@@ -68,8 +68,7 @@ def check_list_index(index_list, index,count):
 def find_possible_index(tried_material_list, index_list, list_size,index):
     while(1):
         if not check_index(tried_material_list,index) and not check_index(index_list,index) :
-            index = random.randrange(0,list_size)#(index+1)%list_size
-	    #index = random.randrange(0,list_size)%
+            index = random.randrange(0,list_size)
         else:
             return index
 
@@ -105,7 +104,7 @@ def get_residual(realweight,realweight_list,residual_list):
             return residual_list[i]
     return 0
 
-def checkCombination(temp_list,temp_index_list,index,extra_width,max_width):
+def checkCombination(temp_list,temp_index_list,index,extra_width,max_width, max_mim):
 
     temp_index = temp_index_list[index][:]
     temp_index.sort()
@@ -117,9 +116,10 @@ def checkCombination(temp_list,temp_index_list,index,extra_width,max_width):
         if temp_index == temp_sorted_index:
             return False
 
-    if extra_width >=0 and extra_width<=100:
+    if extra_width >=0 and extra_width<= max_mim:
         return True
     else:
+        #print(extra_width, max_mim)
         return False
 
 def combiWeight(thickness,width_list,length,weight,repeat):
@@ -262,66 +262,59 @@ def translate_alloy(alloy):
     elif alloy == 'LW':
         return 'BRW04'
 
-def get_mim_width(num,thickness,alloy,detail_code):
+def get_min_max_mim_width(num,thickness,alloy,detail_code):
+    #return min, max
 
     if detail_code == '산업재':
-        if num == 1:
-            return 30
-        elif num == 2:
-            return 30
-        elif num == 3:
-            return 30
-        else:
-            return 60
+        return 25, 40
 
     elif detail_code == '박박':
         if num == 1:
-            return 35
+            return 35, 60
         elif num == 2:
-            return 40
+            return 40, 70
         elif num == 3:
-            return 50
+            return 50, 70
         else:
-            return 60
+            return 60, 80
     elif detail_code == '후박':
         if num == 1:
-            return 35
+            return 35, 60
         elif num == 2:
-            return 50
+            return 50, 70
         elif num == 3:
-            return 60
+            return 60, 80
         else:
-            return 70
+            return 70, 90
+    elif detail_code == '일반':
+        if num == 1:
+            return 35, 60
+        elif num == 2:
+            return 50, 70
+        elif num == 3:
+            return 60, 80
+        else:
+            return 70, 90
 
     elif thickness <= 12 and alloy == 'CG':
-        if num ==1:
-            return 35
-        elif num ==(2 or 3):
-            return 40
-        else:
-            return 60
+        return 35, 55
 
     elif thickness <=13.5  and (alloy == 'AC'or alloy == 'AE'):
         if num == 1:
-            return 40
+            return 35, 55
         elif num == 2:
-            return 50
-        elif num == 3:
-            return 60
+            return 45, 65
         else:
-            return 70
+            return 65, 85
 
     else:
         if num == 1:
-            return 30
+            return 30, 50
         elif num == 2:
-            return 40
-        elif num == 3:
-            return 50
-        elif num ==4:
-            return 60
+            return 40, 60
         else:
-            return 70
+            return 50, 70
+
 
 def check_doubling(doubling_code):
     if doubling_code == 'G' or doubling_code == 'M': #G M

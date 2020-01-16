@@ -193,24 +193,29 @@ class Engine:
 
 		total_addition_count = 0
 		current_count = 0
+		middle_group_random_index_list =list(range(0,len(middle_group_index)-1))
+		random.shuffle(middle_group_random_index_list)
 
 		print("@@@@@@@@@@@@@@@@@@@@@current_big_group_name: ", current_big_group_name)
 		for r in range(0,len(middle_group_index)-1):
 			print("진행률: ",(r+1)/(len(middle_group_index)-1))
 			start_index=0
 			end_index = 0
+			middle_index = middle_group_random_index_list[r]
 
 			for i in range(len(small_group_index)): #'권취','TEMPER','두께'가 동일한 범위 선택(middle group 선택)
-				if middle_group_index[r] == small_group_index[i]:
+				if middle_group_index[middle_index] == small_group_index[i]:
 					start_index = i
-				elif middle_group_index[r+1] == small_group_index[i]:
+				elif middle_group_index[middle_index+1] == small_group_index[i]:
 					end_index = i
 					break;
+
 
 			middle_group_total_count = 0
 			for i in range(small_group_index[start_index],small_group_index[end_index]):
 				if temp_order_group_data['횟수'][i]!= CONST_OUT_OF_COUNT_NUM: ##남은 횟수 확인
 					middle_group_total_count += temp_order_group_data['횟수'][i]
+
 
 			combi_try_count = -1
 			standard_score = 100
@@ -282,7 +287,7 @@ class Engine:
 						break
 
 				#새로운 원자재를 구매해야하는 경우
-				if need_new_material >len(temp_material_group_data)*1.5 :#and combi_try_count > len(temp_material_group_data)*2:
+				if need_new_material >len(temp_material_group_data)*1.5:
 					break;
 
 				if new_material:
@@ -306,6 +311,7 @@ class Engine:
 						## 산업재, 박박, 후박, FIN 등
 						detail_code = temp_order_group_data['세부품목'][small_group_index_start]
 
+
 						## 횟수 확인, 남은 횟수에 따라 확률값 부여
 						count_index = [] #<- (확률,index)
 						max_index_count = 0
@@ -313,9 +319,11 @@ class Engine:
 						for j in range(small_group_index_start,small_group_index_end):
 							## 횟수가 없는 오더도 포함
 							if temp_order_group_data['횟수'][j]<CONST_OUT_OF_COUNT_NUM:
-								prob = temp_order_group_data['횟수'][j]
+								prob = temp_order_group_data['횟수'][j]+3
 								count_index.append((prob,j))
+								max_index_count += prob
 								sum_count += prob
+
 							## 횟수 모두 사용한 경우: 확률 1로 값 부여
 							elif -temp_order_group_data['addition_횟수'][j]/temp_order_group_data['const_횟수'][j] < RESIDUAL_RATE:
 								count_index.append((1,j))
@@ -326,6 +334,7 @@ class Engine:
 						temp_index_list=[]
 						temp_count_list=[]
 
+
 						## 횟수가 양수일 경우 -> elements(조합) 구함
 						if sum_count >0:
 
@@ -334,7 +343,8 @@ class Engine:
 							index = -1
 
 							min_width = temp_order_group_data['폭'][small_group_index_end-1]
-							initial_mim_width = utils.get_mim_width(1,thickness,material_alloy,detail_code)
+
+							initial_mim_width, initial_max_mim_width = utils.get_min_max_mim_width(1,thickness,material_alloy,detail_code)
 							max_index_count =sum_count
 
 							while (index_count < max_index_count and material_width >= min_width+initial_mim_width):
@@ -360,10 +370,11 @@ class Engine:
 											j = count_index[k][1]
 											break
 
-									mim_width = utils.get_mim_width(num_of_combi+1,thickness,material_alloy,detail_code)
+									mim_width, max_mim_width = utils.get_min_max_mim_width(num_of_combi+1,thickness,material_alloy,detail_code)
 									addition_mim_width = mim_width - pre_mim_width
 
 									if utils.check_push(temp_width_list[index],temp_order_group_data['폭'][j]+addition_mim_width,material_width):
+
 
 										if temp_order_group_data['횟수'][j] < CONST_OUT_OF_COUNT_NUM:
 											check_only_addition = False ## 추가 오더만으로 생산은 필요 없음
@@ -401,14 +412,15 @@ class Engine:
 
 											if not find_index: ##해당 index가 없을 경우 새롭게 생성 [초과횟수(2),index]
 											    special_addition_count_list.append([2,temp_index_list[index][k]])
+								mim_width, max_mim_width = utils.get_min_max_mim_width(num_of_combi,thickness,material_alloy,detail_code)
 
 								    #본 조합이 좋은 조합이면 살리고 아니면 죽임
-								if not(utils.checkCombination(temp_width_list,temp_index_list,index,extra_width,material_width)) \
+								if not(utils.checkCombination(temp_width_list,temp_index_list,index,extra_width,material_width, max_mim_width-mim_width)) \
 									    or check_only_addition:
 									del temp_width_list[index]
 									del temp_index_list[index]
 									del temp_count_list[index]
-									index += -1
+									index -= 1
 
 							#좋은 조합 모음 and 새로운 조합
 							if len(temp_width_list)!=0 and temp_order_group_data['길이(기준)'][j] >0:
@@ -422,7 +434,6 @@ class Engine:
 					########조합 종목 선택
 
 					#폭 조합 ->  길이 조합 -> middle group set 조합
-
 					sorted_realweight_list = [] #무게, 횟수, index_list, count_list, combi_width_list, 가로 손실 길이 ,낭비량
 
 					max_realweight = 0
@@ -620,7 +631,7 @@ class Engine:
 									## 추가 생산 비율 추가
 									sum_each_addition_rate += addition_count/const_count
 
-									if (expected_count)/const_count > 1+RESIDUAL_RATE:
+									if expected_count/const_count > 1+RESIDUAL_RATE:
 										possible_count = False
 
 									#if current_count == const_count: ## 한 번도 생산하지 않은 것은 강제로 생산
@@ -631,13 +642,12 @@ class Engine:
 
 								## 추가 생산 가능한 경우 계산
 								if not possible_count:
-
 									non_addtional_temp_score = 100 - (50*(temp_extra_width/100)\
-								                        +10*((combi_count-1)/3)\
+								                      #  +10*((combi_count-1)/3)\
 														+50*(not_additional_sum_redisual/processed_weight))
 
 									additional_temp_score = 100 - (50*(temp_extra_width/100)\
-									                        +10*((combi_count-1)/3)\
+									                   #     +10*((combi_count-1)/3)\
 															+50*(sum_each_addition_rate+(temp_total_residual/processed_weight)))
 
 									if non_addtional_temp_score > additional_temp_score:
@@ -647,8 +657,8 @@ class Engine:
 
 
 								temp_score = 100 - (50*(temp_extra_width/100)\
-								                        +10*((combi_count-1)/3)\
-														+50*(sum_each_addition_rate+(temp_total_residual/processed_weight)))#+300*used_material)
+								                      #  +10*((combi_count-1)/3)\
+														+50*(sum_each_addition_rate+(temp_total_residual/processed_weight)))
 														#100*(addition_weight/processed_weight)
 								## best 조합 선택
 								if total_best_score < temp_score:
@@ -664,7 +674,7 @@ class Engine:
 							combi_try_count +=1
 							standard_score -= 5
 
-						elif combi_try_count > len(temp_material_group_data) or standard_score<=total_best_score: #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
+						elif combi_try_count > len(temp_material_group_data):# or standard_score<=total_best_score: #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
 
 							need_new_material = -100
 							## best list 입력
@@ -730,7 +740,7 @@ class Engine:
 							total_best_material_realweight = 0
 
 						else:
-							if total_best_score>1:
+							if total_best_score>10:
 								standard_score += math.log((110-standard_score)/(120-total_best_score))*(120/total_best_score)
 							else:
 								standard_score += math.log((110-standard_score)/(120-total_best_score))*abs(total_best_score)
@@ -808,7 +818,7 @@ class Engine:
 			temp_detail_code = temp_order_group_data['세부품목'][selected_list[i][1][j-1][2][0]]
 			temp_thickness = temp_order_group_data['두께'][selected_list[i][1][j-1][2][0]]
 			for j in range(len(temp_length_list)):
-				temp_mim = utils.get_mim_width(temp_length_list[j],temp_thickness,temp_material_alloy,temp_detail_code)
+				temp_mim, temp_max_mim = utils.get_min_max_mim_width(temp_length_list[j],temp_thickness,temp_material_alloy,temp_detail_code)
 				temp_mim_list.append(temp_mim)
 				temp_temp_width_without_mim = temp_material_group_data['실폭'][selected_list[i][0]]-temp_width_sum_list[j]-temp_mim
 				temp_temp_width_without_mim = round(temp_temp_width_without_mim,1)
