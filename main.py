@@ -1,14 +1,15 @@
 import engine as eg
 import time
 from copy import deepcopy
-overlap = True
-e = eg.Engine('./data/폭조합용 세부자료_V2_190916.xls','./data/원자재내역.XLS',overlap)
+overlap = False
+#e = eg.Engine('./data/폭조합용 세부자료_V2_190916.xls','./data/원자재내역.XLS',overlap)
+e = eg.Engine('./data/폭조합용 세부자료_V3_200113.xls','./data/원자재내역_200113.XLS',overlap)
 e.read_file()
-alloy = ["A8079"]#,"A1050","A1100","A8079",,"A8079","A3003","A8021","F308","F309","BRW04"]
+alloy = ["A1100"]#,"A1050","A1100","A8079",,"A8079","A3003","A8021","F308","F309","BRW04"]
 start = time.time()
 
 title = "중복불허"
-e.overlap = True
+e.overlap = overlap
 
 if overlap:
     title = "중복허용"
@@ -31,5 +32,6 @@ for i in alloy:
 
     print("finish! How long time: ",time.time()-start)
     best_result = temp_e.select_best_result()
+
     del temp_e
     e.save_excel(i,best_result,title)
