@@ -914,94 +914,6 @@ class Engine:
 		self.result_list.append([result_score, combi_df, result_df])
 		print("result_score",result_score)
 
-	def new_get_order_result_data(self,selected_list, temp_order_group_data,temp_material_group_data,avg_score,rate_of_using_material):
-		order_list = []
-		for i in range(len(temp_order_group_data['제품코드'])):
-		    order_list.append([temp_order_group_data['제품코드'][i],0,[]])
-		## 원자재 check list 생성
-		material_check_list = []
-		# order info_list 생성
-		order_info_list = []
-
-		## 조합 dataframe, save excel file
-		combi_df_list = []
-		for i in range(len(selected_list)):
-			material_check_list.append([selected_list[i][0],0]) # [material_index, check 여부(사용 안했을 경우 0, 했을 경우 1)]
-
-			temp_material_index = selected_list[i][0]
-			material_weight = temp_material_group_data['포장중량'][temp_material_index]
-			material_width = temp_material_group_data['실폭'][temp_material_index]
-			material_strip_lot = temp_material_group_data['STRIP LOT'][temp_material_index]
-			temp_material_info_list =["","","","",""]
-			#[원자재 코드(0), 원자재 폭(1), STRIP LOT(2), ROLL(3), 투입량(4)]
-			total_combi_weigth_sum = 0
-
-			temp_material_info_list[0] = i+1 #(temp_material_group_data['index'][temp_material_index])
-			temp_material_info_list[1] = (temp_material_group_data['제품코드'][temp_material_index])
-			temp_material_info_list[2] = (material_width)
-			temp_material_info_list[3] = (material_strip_lot)
-			temp_material_info_list[4] = (material_weight)
-
-			temp_combi_info_list = []
-			for j in range(len(selected_list[i][1])):
-				j_first_index = selected_list[i][1][j][2][0]
-				temp_combi_info = ["","","","","","","","","","","","","","","",""]
-				#[분리항(0), 폭조합 규격_1(1), 폭조합 규격_2(2), 폭조합 규격_3(3), 폭조합 규격_4(4),
-									# 폭조합 중량_1(5), 폭조합 중량_2(6), 폭조합 중량_3(7), 폭조합 중량_4(8), 폭조합 중량 합께(9),
-									# 폭합계(10), 폭 차이(11), 제품 길이(12), 분리 횟수(13), 수율(%)(14), 잔량(15)]
-
-				temp_width_sum =0
-				temp_weight_sum = 0
-				temp_count = selected_list[i][1][j][1]
-				temp_length = temp_order_group_data['길이(기준)'][j_first_index]
-				temp_thickness = temp_order_group_data['두께'][j_first_index]
-
-
-				for k in range(len((selected_list[i][1][j][2]))):
-					k_index = selected_list[i][1][j][2][k]
-					temp_width = temp_order_group_data['폭'][k_index]
-					temp_width_sum += temp_width
-					temp_weight = round(utils.realWeight(temp_thickness,temp_width,temp_length,1,temp_count))
-					temp_weight_sum += temp_weight
-					temp_combi_info[1+k] = temp_order_group_data['제품코드'][k_index]
-					temp_combi_info[5+k] = temp_weight
-
-				total_combi_weigth_sum += temp_weight_sum
-				temp_combi_info[0] = str(j+1)+"_"+str(len(selected_list[i][1]))
-				temp_combi_info[9] = temp_weight_sum
-				temp_combi_info[10] = temp_width_sum
-				temp_combi_info[11] = material_width-temp_width_sum
-				temp_combi_info[12] = temp_length
-				temp_combi_info[13] = temp_count
-				if j == len(selected_list[i][1])-1:
-					temp_combi_info[14] = total_combi_weigth_sum/material_weight
-					temp_combi_info[15] = material_weight-total_combi_weigth_sum
-				temp_combi_info_list.append(temp_combi_info)
-
-			for j in range(len(temp_combi_info_list)):
-				temp_list = []
-				if j == 0:
-					for k in range(len(temp_material_info_list)):
-						temp_list.append(temp_material_info_list[k])
-				else:
-					for k in range(len(temp_material_info_list)):
-						temp_list.append("")
-				for k in range(len(temp_combi_info_list[j])):
-					temp_list.append(temp_combi_info_list[j][k])
-
-				combi_df_list.append(temp_list)
-
-		combi_df = pd.DataFrame(columns =['NO.','원자재 코드', 'STRIP LOT','ROLL','투입량', '분리항','폭조합 규격_1','폭조합 규격_2',\
-										'폭조합 규격_3', '폭조합 규격_4','폭조합 중량_1', '폭조합 중량_2', '폭조합 중량_3', '폭조합 중량_4',\
-										'폭조합 중량 합께','폭합계', '폭 차이', '제품 길이', '분리 횟수', '수율', '잔량'],data=combi_df_list)
-
-		now = datetime.now()
-		time = str(now.year)+'_'+str(now.month)+'_'+str(now.day)+'_'+str(now.hour)+'_'+str(now.minute)+'_'
-		file_name='new'+time+"_result.xlsx"
-		writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
-		combi_df.to_excel(writer,index=False, sheet_name ='combi_result')
-		writer.close()
-
 	def new_get_result_data(self,selected_list, temp_order_group_data,temp_material_group_data,avg_score,rate_of_using_material):
 		order_list = []
 		for i in range(len(temp_order_group_data['제품코드'])):
@@ -1106,8 +1018,10 @@ class Engine:
 					temp_order_info[2] += order_info_list[j][2]
 					k = 4
 					not_include_check = True
-					while k<14:
-						if temp_order_info[k] == order_info_list[j][3]:
+					while k<14: ## 중보되는 원자재 있는지 확인
+						if temp
+
+						_order_info[k] == order_info_list[j][3]:
 							not_include_check = False
 							break
 						k += 2
@@ -1127,7 +1041,6 @@ class Engine:
 									temp_order_info[k+1] = 1
 								else:
 									temp_order_info[k+1] = '포함'
-
 								break
 
 							k += 2
@@ -1141,7 +1054,9 @@ class Engine:
 		'코일수_2','원자재_3','코일수_3','원자재_4','코일수_4','원자재_5','코일수_5',\
 		'발주 원자재_1','발주 코일수_1','발주 원자재_2','발주 코일수_2'],data=order_df_list)
 
+		result_score = 100
 
+		self.result_list.append([result_score, combi_df, result_df])
 		now = datetime.now()
 		time = str(now.year)+'_'+str(now.month)+'_'+str(now.day)+'_'+str(now.hour)+'_'+str(now.minute)+'_'
 		file_name='new'+time+"_result.xlsx"
@@ -1154,8 +1069,9 @@ class Engine:
 	def start_combi(self,big_group_name,residual_rate):
 		selected_list, temp_order_group_data, temp_material_group_data, avg_score, rate_of_using_material\
 		 					= self.get_combination(big_group_name,residual_rate)
-		self.get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
+		#self.get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
 		self.new_get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
+
 	def run_thread(self,big_group_name="",num_of_thread=1,residual_rate=0.3):
 
 		threads = []
