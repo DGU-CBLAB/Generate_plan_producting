@@ -3,12 +3,15 @@ from collections import Counter
 from copy import deepcopy
 import math
 
-def width_combi(small_group_index_start,small_group_index_end,temp_order_group_data,material_width,thickness,material_alloy,detail_code,CONST_OUT_OF_COUNT_NUM):
+def width_combi(small_group_index_list,temp_order_group_data,material_width,thickness,material_alloy,detail_code,CONST_OUT_OF_COUNT_NUM):
     ## 횟수 확인, 남은 횟수에 따라 확률값 부여
     count_index = [] #<- (확률,index)
     max_index_count = 0
     sum_count = 0
-    for j in range(small_group_index_start,small_group_index_end):
+    min_width = CONST_OUT_OF_COUNT_NUM
+    for j in small_group_index_list:
+        if temp_order_group_data['폭'][j] < min_width:
+            min_width = temp_order_group_data['폭'][j]
         ## 횟수가 없는 오더도 포함
         if temp_order_group_data['횟수'][j]<CONST_OUT_OF_COUNT_NUM and temp_order_group_data['길이(기준)'][j] >0:
             prob = temp_order_group_data['횟수'][j]*(6-temp_order_group_data['우선순위'][j])+3
@@ -35,7 +38,7 @@ def width_combi(small_group_index_start,small_group_index_end,temp_order_group_d
         index_count = -1
         index = -1
 
-        min_width = temp_order_group_data['폭'][small_group_index_end-1]
+    #    min_width = temp_order_group_data['폭'][]
 
         initial_mim_width, initial_max_mim_width = get_min_max_mim_width(1,thickness,material_alloy,detail_code)
 #       max_index_count *=max_index_count
@@ -807,8 +810,10 @@ def calculateRealweight(thickness,input_weight):
 def translate_alloy(alloy):
     if alloy == 'AB':
         return 'A1050'
-    elif alloy == 'AC' or alloy == 'AC,HC':
+
+    elif alloy == 'AC':
         return 'A1235'
+
     elif alloy == 'AE':
         return 'A1100'
     elif alloy == 'HC':
@@ -836,8 +841,8 @@ def translate_alloy(alloy):
         return 'CG'
     elif alloy == 'A8021':
         return 'HS'
-    elif alloy == 'F30':
-        return 'CS8'
+    elif alloy == 'F308':
+        return 'CS'
     elif alloy == 'F309':
         return 'CJ'
     elif alloy == 'BRW04':

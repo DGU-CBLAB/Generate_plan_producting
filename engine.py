@@ -97,10 +97,7 @@ class Engine:
 				self.material_name_list.append(temp)
 				self.material_index_list.append(i)
 
-
-
-
-	def get_current_big_group_info(self,current_big_group_name):
+	def new_get_current_big_group_info(self,current_big_group_name):
 		##small_group 선택
 		group_name =  current_big_group_name
 		temp_order_group_data = pd.DataFrame()
@@ -129,63 +126,97 @@ class Engine:
 			temp_material_group_data = self.material_data[self.material_index_list[material_index]:len(self.material_data)].reset_index(drop=True)
 
 		## 새롭게 sorting
-		temp_order_group_data = temp_order_group_data.sort_values(by=['권취','TEMPER','원자재_M','원자재_T','두께','길이(기준)','내경','코아','폭'],\
+		temp_order_group_data = temp_order_group_data.sort_values(by=['세부품목','권취','TEMPER','원자재_M','원자재_T','두께','길이(기준)','내경','코아','폭'],\
 				                            ascending=False).reset_index(drop=True)
+		material_m_list = list(set(list(temp_order_group_data['원자재_M'])))
+		delete_index = -1
+		for i in range(len(material_m_list)):
+			if ',' in material_m_list[i]:
+				temp = material_m_list[i].split(',')
+				material_m_list[i] = temp[0]
+				for j in range(1,len(temp)):
+					material_m_list.append(temp[j])
+		try:
+			material_m_list.remove('무관')
+		except:
+			pass
+		material_m_list = list(set(list(material_m_list)))
+		m_group_list = []
+		# m_group_list = [ [m, [middle_group_name,[small_group_name1, index1, index2, ... ],[small_group_name2, index1, index2, ... ]]] ]
+		#				[ [ 0,  [j,  [k]	] ]
+		if len(material_m_list) == 0:
+			material_m_list.append('무관')
 
-		##set small group
-		small_group_name =[]
-		small_group_index = []
-		for i in range(temp_order_group_data.shape[0]):
-			temp=str(temp_order_group_data['권취'][i])+"-"
-			temp+=str(temp_order_group_data['TEMPER'][i])+"-"
-			temp+=str(temp_order_group_data['원자재_M'][i])+"-"
-			temp+=str(temp_order_group_data['원자재_T'][i])+"-"
-			temp+=str(temp_order_group_data['두께'][i])+"-"
-			temp+=str(temp_order_group_data['내경'][i])+"-"
-			temp+=str(temp_order_group_data['길이(기준)'][i])+"-"
-			temp+=temp_order_group_data['코아'][i]
-			check = 0
-			for j in range(len(small_group_name)):
-				if(temp==small_group_name[j]):
-					check +=1
-					break
-			if(check==0):
-				small_group_name.append(temp)
-				small_group_index.append(i)
+		for m in range(len(material_m_list)):
+			temp_m_group_index = []
+			temp_m_name =  material_m_list[m]
+			temp_m_group = [ temp_m_name ]
 
-		small_group_name.append("end")
-		small_group_index.append(len(temp_order_group_data))
+			for i in range(temp_order_group_data.shape[0]):
+				temp_order_m_list = ['무관']
+				if temp_order_group_data['원자재_M'][i] != '무관':
+					temp_order_m_list = (temp_order_group_data['원자재_M'][i]).split(',')
 
-		##set middle group
-		middle_group_name = []
-		middle_group_index=[]
-		for i in range(temp_order_group_data.shape[0]):
-			temp=str(temp_order_group_data['권취'][i])+'-'
-			temp+=str(temp_order_group_data['TEMPER'][i])+"-"
-			#temp+=str(temp_order_group_data['원자재_M'][i])+"-"
-			temp+=str(temp_order_group_data['원자재_T'][i])+"-"
-			temp+=str(temp_order_group_data['두께'][i])
-			check = 0
-			for j in range(len(middle_group_name)):
-				if(temp==middle_group_name[j]):
-					check +=1
-					break
-			if(check==0):
-				middle_group_name.append(temp)
-				middle_group_index.append(i)
+				for j in temp_order_m_list:
+					if j == temp_m_name or j == '무관':
+						temp_m_group_index.append(i)
+						break
 
-		middle_group_name.append("end")
-		middle_group_index.append(len(temp_order_group_data))
+			##set middle group
+			middle_group_name = []
+			for i in temp_m_group_index:
+				temp=str(temp_order_group_data['세부품목'][i])+'-'
+				temp+=str(temp_order_group_data['권취'][i])+'-'
+				temp+=str(temp_order_group_data['TEMPER'][i])+"-"
+				temp+=str(temp_order_group_data['원자재_T'][i])+"-"
+				temp+=str(temp_order_group_data['두께'][i])
+				check = True
+				for j in range(len(middle_group_name)):
+					if(temp==middle_group_name[j]):
+						check = False
+						break
+				if check:
+					middle_group_name.append(temp)
 
-		return temp_order_group_data, temp_material_group_data ,\
-			middle_group_name, middle_group_index, \
-			small_group_name, small_group_index;
+			for i in range(len(middle_group_name)):
+				temp_middle_group_name = middle_group_name[i]
+				temp_m_group.append([temp_middle_group_name])
+
+			small_group_name =[]
+			small_group_index = []
+
+			for i in temp_m_group_index:
+				temp=str(temp_order_group_data['세부품목'][i])+"-"
+				temp+=str(temp_order_group_data['권취'][i])+"-"
+				temp+=str(temp_order_group_data['TEMPER'][i])+"-"
+				temp+=str(temp_order_group_data['원자재_T'][i])+"-"
+				temp+=str(temp_order_group_data['두께'][i])
+				for j in range(1,len(temp_m_group)):
+					if temp_m_group[j][0]==temp:
+						temp+="-"+str(temp_order_group_data['내경'][i])+"-"
+						temp+=str(temp_order_group_data['길이(기준)'][i])+"-"
+						temp+=temp_order_group_data['코아'][i]
+						check = True
+
+						for k in range(1,len(temp_m_group[j])):
+							if(temp==temp_m_group[j][k][0]):
+								temp_m_group[j][k][1].append(i)
+								check = False
+								break
+						if check:
+							temp_m_group[j].append([temp,[i]])
+
+			m_group_list.append(temp_m_group)
+
+		return temp_order_group_data, temp_material_group_data , m_group_list
 
 	def get_combination(self, current_big_group_name,residual_rate):
-		temp_order_group_data, temp_material_group_data , \
-		middle_group_name, middle_group_index, \
-		small_group_name, small_group_index = self.get_current_big_group_info(current_big_group_name)
-		print(temp_order_group_data)
+		#temp_order_group_data, temp_material_group_data , \
+		#middle_group_name, middle_group_index, \
+		#small_group_name, small_group_index = self.get_current_big_group_info(current_big_group_name)
+
+		temp_order_group_data, temp_material_group_data, mt_m_group_list = self.new_get_current_big_group_info(current_big_group_name)
+		#print(temp_order_group_data)
 
 		CONST_OUT_OF_COUNT_NUM = 100000
 		RESIDUAL_RATE = residual_rate
@@ -201,49 +232,34 @@ class Engine:
 
 		total_addition_count = 0
 		current_count = 0
-		middle_group_random_index_list =list(range(0,len(middle_group_index)-1))
-		random.shuffle(middle_group_random_index_list)
+		mt_m_group_random_index_list = list(range(len(mt_m_group_list)))
+		random.shuffle(mt_m_group_random_index_list)
 
 		print("@@@@@@@@@@@@@@@@@@@@@current_big_group_name: ", current_big_group_name)
-		for ver in range(0,1):
-			if ver==1:
-				self.order_data = self.order_data.sort_values(by=['ALLOY_2','권취','TEMPER','원자재_M','원자재_T','두께','길이(기준)','내경','코아','폭'],\
-						                      ascending=False).reset_index(drop=True)
-				self.set_big_and_material_group_info(2)
-				temp_order_group_data, temp_material_group_data , \
-				middle_group_name, middle_group_index, \
-				small_group_name, small_group_index = self.get_current_big_group_info(current_big_group_name)
-
-				selected_material=[]
-				holding_material=[]
-				middle_group_random_index_list =list(range(0,len(middle_group_index)-1))
-				random.shuffle(middle_group_random_index_list)
+		for ver in range(len(mt_m_group_list)):
+			random_index = mt_m_group_random_index_list[ver]
+			middle_group_info = []
+			for i in range(1,len(mt_m_group_list[random_index])):
+				middle_group_info.append(mt_m_group_list[random_index][i])
 
 
-			for r in range(0,len(middle_group_index)-1):
+			middle_group_random_index_list = list(range(len(middle_group_info)))
+			random.shuffle(middle_group_random_index_list)
 
-				print("진행률: ",(r+1)/(len(middle_group_index)-1))
-				start_index=0
-				end_index = 0
-				middle_index = middle_group_random_index_list[r]
-				print("middle_group_index",middle_index)
-				for i in range(len(small_group_index)): #'권취','TEMPER','두께'가 동일한 범위 선택(middle group 선택)
-					if middle_group_index[middle_index] == small_group_index[i]:
-						start_index = i
-					elif middle_group_index[middle_index+1] == small_group_index[i]:
-						end_index = i
-						break;
-
-
+			for r in range(len(middle_group_info)):
+				random_middle_index = middle_group_random_index_list[r]
+				print("진행률: ",r/len(middle_group_info))
 				middle_group_total_count = 0
-				for i in range(small_group_index[start_index],small_group_index[end_index]):
-					if temp_order_group_data['횟수'][i]!= CONST_OUT_OF_COUNT_NUM: ##남은 횟수 확인
-						middle_group_total_count += temp_order_group_data['횟수'][i]
+				middle_group_index_list = []
+				for i in range(1,len(middle_group_info[random_middle_index])):
+					for j in middle_group_info[random_middle_index][i][1]:
+						if temp_order_group_data['횟수'][j]!= CONST_OUT_OF_COUNT_NUM: ##남은 횟수 확인
+							middle_group_total_count += temp_order_group_data['횟수'][j]
+							middle_group_index_list.append(j)
 
-				print("middle_group_total_count",middle_group_total_count)
+				middle_start_index = middle_group_info[random_middle_index][1][1][0]
 				combi_try_count = -1
 				standard_score = 100
-
 				n = -1
 				total_best_score = -CONST_OUT_OF_COUNT_NUM
 				total_best_select_list = []
@@ -276,7 +292,6 @@ class Engine:
 								if i == n:
 									possible = False
 
-
 						if possible:
 							## 원자재 정보 setting
 							material_code = temp_material_group_data['제품코드'][n]
@@ -287,16 +302,16 @@ class Engine:
 							material_width = temp_material_group_data['실폭'][n]
 							material_weight = float(temp_material_group_data['포장중량'][n])/1000
 
-							thickness = temp_order_group_data['두께'][small_group_index[start_index]]
+							thickness = temp_order_group_data['두께'][middle_start_index]
 							processed_weight= utils.calculateRealweight(thickness,material_weight)
 
-							if current_big_group_name == 'A8021' and temp_order_group_data['원자재_M'][small_group_index[start_index]] == '무관':
+							if current_big_group_name == 'A8021' and temp_order_group_data['원자재_M'][middle_start_index] == '무관':
 								order_material = 'N'
 							else:
-								order_material = temp_order_group_data['원자재_M'][small_group_index[start_index]]
+								order_material = temp_order_group_data['원자재_M'][middle_start_index]
 
 							possible = utils.check_material(material_company, material_temper, material_thickness, \
-													order_material, temp_order_group_data['원자재_T'][small_group_index[start_index]], thickness)
+													order_material, temp_order_group_data['원자재_T'][middle_start_index], thickness)
 
 							if possible:
 								holding_material.append(n)
@@ -312,8 +327,6 @@ class Engine:
 
 					#새로운 원자재를 구매해야하는 경우
 					if need_new_material >len(temp_material_group_data)*1.5:
-						print(temp_material_group_data)
-						print('no~~~~~~~~~~~~~~~~~~~~~~~~~~')
 						break;
 
 					if new_material:
@@ -324,29 +337,24 @@ class Engine:
 						combi_index_list=[]
 						combi_count_list=[]
 						special_addition_count_list = []
-						for i in range(start_index,end_index):  #'권취','TEMPER','두께' 일치 (middle group)
 
+						for i in range(1,len(middle_group_info[random_middle_index])):
+
+							small_group_index_list = middle_group_info[random_middle_index][i][1]
+							small_group_start_index = small_group_index_list[0]
 							max_index_count = 0
-
-							## small_group_index_start, small_group_index_end 설정
-							small_group_index_start = small_group_index[i]
-							if i < len(small_group_index)-1:
-								small_group_index_end = small_group_index[i+1]
-							else:
-								small_group_index_end = small_group_index[i]
-
 							temp_width_list=[]; temp_index_list=[]; temp_count_list =[]; #special_addition_count_list =[];
-							## 산업재, 박박, 후박, FIN 등
-							detail_code = temp_order_group_data['세부품목'][small_group_index_start]
+								## 산업재, 박박, 후박, FIN 등
+							detail_code = temp_order_group_data['세부품목'][small_group_start_index]
 							temp_material_width = material_width
 
 							temp_width_list, temp_index_list, temp_count_list,special_addition_count_list \
-								= utils.width_combi(small_group_index_start,small_group_index_end,temp_order_group_data,\
+								= utils.width_combi(small_group_index_list,temp_order_group_data,\
 									temp_material_width,thickness,material_alloy,detail_code,CONST_OUT_OF_COUNT_NUM)
 
-								#좋은 조합 모음 and 새로운 조합
+										#좋은 조합 모음 and 새로운 조합
 							if len(temp_width_list)!=0:
-								temp_width_list.append(temp_order_group_data['길이(기준)'][small_group_index_start])
+								temp_width_list.append(temp_order_group_data['길이(기준)'][small_group_start_index])
 								combi_width_list.append(temp_width_list)
 								combi_index_list.append(temp_index_list)
 								combi_count_list.append(temp_count_list)
@@ -409,10 +417,7 @@ class Engine:
 							temp_best_score = -CONST_OUT_OF_COUNT_NUM
 							try_total_count = int(len(sorted_realweight_list)*math.sqrt(len(sorted_realweight_list)))
 							if try_total_count < 10:
-								print(try_total_count)
-								try_total_count *=10
-								print(try_total_count)
-								print()
+								try_total_count *= (10-try_total_count)
 							while try_total_count >0:
 								try_total_count -=1
 								temp_list = []
@@ -542,11 +547,9 @@ class Engine:
 
 										if expected_count/const_count > 1+temp_order_group_data['최대생산량'][i]:
 											penalty = ((expected_count/const_count)-(1+temp_order_group_data['최대생산량'][i]))+1
-											penalty = math.pow(penalty,1)-1
+											penalty = math.pow(penalty,2)-1
 											sum_each_addition_rate += penalty
-											#print(penalty)
-											#print(sum_each_addition_rate)
-											#print()
+
 											possible_count = False
 
 										elif current_count == const_count:
@@ -599,7 +602,7 @@ class Engine:
 
 								need_new_material = -100
 								## best list 입력
-								select_list = deepcopy(total_best_select_list)
+								select_list = (total_best_select_list)
 								best_score = total_best_score
 								n = total_best_material_index
 								special_addition_count_list = total_best_special_list
@@ -656,9 +659,6 @@ class Engine:
 								temp_selected_list.append(n)
 								temp_selected_list.append(select_list)
 								selected_list.append(temp_selected_list)
-
-
-
 
 								#설정 초기화
 								n = random.randrange(0,len(temp_material_group_data))
