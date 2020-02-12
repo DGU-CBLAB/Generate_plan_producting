@@ -3,21 +3,23 @@ import time
 from copy import deepcopy
 overlap = False
 #e = eg.Engine('./data/폭조합용 세부자료_V2_190916.xls','./data/원자재내역.XLS',overlap)
-e = eg.Engine('./data/폭조합용 세부자료_V3_200113.xls','./data/원자재내역_200113.XLS',overlap)
+e = eg.Engine('./data/폭조합용 세부자료_V3_일반재_의뢰용.xls','./data/원자재내역_200113.XLS',overlap)
 e.read_file()
-alloy = ["A1100"]#,"A1050","A1100","A8079",,"A8079","A3003","A8021","F308","F309","BRW04"]
+alloy = ["A1235"]#,"A1250""A1050","A1100","A8079","A3003","A8021","F308","F309","BRW04"]
+## A3003, F308, BRW04, F309-> 적절한 원자재가 없음
+
 start = time.time()
 
-title = "중복불허"
+
 e.overlap = overlap
 
-if overlap:
-    title = "중복허용"
+
 
 for i in alloy:
     temp_e = deepcopy(e)
     residual_rate = 0.3 #추가 비율
     num_of_thread = 1
+
     if num_of_thread>8:
         num_of_loop = int(num_of_thread/8)
         print(num_of_loop)
@@ -34,4 +36,6 @@ for i in alloy:
     best_result = temp_e.select_best_result()
 
     del temp_e
+    title = "test_my_algo"
+    title+='_t_'+str(round(time.time()-start,2))+'s'
     e.save_excel(i,best_result,title)
