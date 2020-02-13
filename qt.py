@@ -96,16 +96,16 @@ class MyWindow(QWidget):
 			for i in range(len(select_alloy_list)):
 				temp_e = deepcopy(self.e)
 				num_of_thread = int(self.textbox1.text())
-				residual_rate = float(self.textbox2.text())
+				over_product_rate = float(self.textbox2.text())
 				if num_of_thread>10:
 					num_of_loop = int(num_of_thread/10)
 					remainder = num_of_thread%10
 					for j in range(num_of_loop-1):
-						temp_e.run_thread(select_alloy_list[i],10,residual_rate)
+						temp_e.run_thread(select_alloy_list[i],10,over_product_rate)
 
-					temp_e.run_thread(select_alloy_list[i],remainder,residual_rate)
+					temp_e.run_thread(select_alloy_list[i],remainder,over_product_rate)
 				else:
-					temp_e.run_thread(select_alloy_list[i],num_of_thread,residual_rate)
+					temp_e.run_thread(select_alloy_list[i],num_of_thread,over_product_rate)
 
 				self.result_list.append([select_alloy_list[i],temp_e.select_best_result()])
 				del temp_e

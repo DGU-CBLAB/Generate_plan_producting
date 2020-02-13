@@ -210,7 +210,7 @@ class Engine:
 
 		return temp_order_group_data, temp_material_group_data , m_group_list
 
-	def get_combination(self, current_big_group_name,residual_rate):
+	def get_combination(self, current_big_group_name,over_product_rate):
 		#temp_order_group_data, temp_material_group_data , \
 		#middle_group_name, middle_group_index, \
 		#small_group_name, small_group_index = self.get_current_big_group_info(current_big_group_name)
@@ -219,7 +219,7 @@ class Engine:
 		#print(temp_order_group_data)
 
 		CONST_OUT_OF_COUNT_NUM = 100000
-		RESIDUAL_RATE = residual_rate
+		#over_product_rate = over_product_rate
 
 		SUM_OF_SCOURE = 0
 		SUM_OF_SCOURE_COUNT = 0
@@ -863,18 +863,18 @@ class Engine:
 
 		self.result_list.append([result_score, combi_df, order_df])
 
-	def start_combi(self,big_group_name,residual_rate):
+	def start_combi(self,big_group_name,over_product_rate):
 		selected_list, temp_order_group_data, temp_material_group_data, avg_score, rate_of_using_material\
-		 					= self.get_combination(big_group_name,residual_rate)
+		 					= self.get_combination(big_group_name,over_product_rate)
 		#self.get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
 		if selected_list != False:
 			self.new_get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
 
-	def run_thread(self,big_group_name="",num_of_thread=1,residual_rate=0.3):
+	def run_thread(self,big_group_name="",num_of_thread=1,over_product_rate=0.3):
 
 		threads = []
 		for i in range(num_of_thread):
-			th = threading.Thread(target=self.start_combi, args=(big_group_name,residual_rate))
+			th = threading.Thread(target=self.start_combi, args=(big_group_name,over_product_rate))
 			threads.append(th)
 
 		for i in range(num_of_thread):
