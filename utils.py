@@ -3,7 +3,35 @@ from collections import Counter
 from copy import deepcopy
 import math
 
-def width_combi(small_group_index_list,temp_order_group_data,material_width,thickness,material_alloy,detail_code,CONST_OUT_OF_COUNT_NUM):
+def get_mim_info(mim_data,num,thickness,alloy,detail_code):
+    if num > (len(mim_data.T)-4)/2:
+        num = int((len(mim_data.T)-4)/2)
+    current_min = ''; current_max ='';
+
+    for i in range(len(mim_data)):
+        if detail_code == mim_data['세부품목'][i] and ((alloy == mim_data['Alloy'][i]) or ('-' == mim_data['Alloy'][i]))  and\
+            mim_data['두께_min'][i] < thickness and thickness <= mim_data['두께_max'][i]:
+
+            current_min = str(num)+'컷_min'; current_max = str(num)+'컷_max';
+
+            if mim_data[current_min][i] == 'x':
+                break
+            elif mim_data[current_min][i] == '-':
+                j = 6;
+                while j < len(data.T)-1 :
+                    min_index_name = mim_data.T.index[j]
+                    max_index_name = mim_data.T.index[j+1]
+                    if mim_data[min_index_name][i] == '-':
+                        min_index_name = mim_data.T.index[j-2]
+                        max_index_name = mim_data.T.index[j-1]
+                        return mim_data[min_index_name][i], mim_data[max_index_name][i]
+                        j+=2
+            else:
+                return mim_data[current_min][i], mim_data[current_max][i]
+
+    return False, False
+
+def width_combi(mim_data,small_group_index_list,temp_order_group_data,material_width,thickness,material_alloy,detail_code,CONST_OUT_OF_COUNT_NUM):
     ## 횟수 확인, 남은 횟수에 따라 확률값 부여
     count_index = [] #<- (확률,index)
     max_index_count = 0
@@ -38,9 +66,7 @@ def width_combi(small_group_index_list,temp_order_group_data,material_width,thic
         index_count = -1
         index = -1
 
-    #    min_width = temp_order_group_data['폭'][]
-
-        initial_mim_width, initial_max_mim_width = get_min_max_mim_width(1,thickness,material_alloy,detail_code)
+        initial_mim_width, initial_max_mim_width = get_mim_info(mim_data,1,thickness,material_alloy,detail_code)
 #       max_index_count *=max_index_count
 
         while (index_count < max_index_count and material_width >= min_width+initial_mim_width):
@@ -54,7 +80,7 @@ def width_combi(small_group_index_list,temp_order_group_data,material_width,thic
 
             try_combi_count = 0
             check_only_addition = True
-            num_of_combi = 0
+            #num_of_combi = 0
             pre_mim_width = 0
 
             while(extra_width >= min_width and try_combi_count<min(10,sum_count)):
@@ -65,12 +91,13 @@ def width_combi(small_group_index_list,temp_order_group_data,material_width,thic
                     if rand < 0:
                         j = count_index[k][1]
                         break
+                mim_width, max_mim_width = get_mim_info(mim_data,len(temp_width_list[index])+1,thickness,material_alloy,detail_code)
+                if mim_width == False:
+                    break
 
-                mim_width, max_mim_width = get_min_max_mim_width(num_of_combi+1,thickness,material_alloy,detail_code)
                 addition_mim_width = mim_width - pre_mim_width
 
                 if check_push(temp_width_list[index],temp_order_group_data['폭'][j]+addition_mim_width,material_width):
-
                     if temp_order_group_data['횟수'][j] < CONST_OUT_OF_COUNT_NUM:
                         check_only_addition = False ## 추가 오더만으로 생산은 필요 없음
 
@@ -78,9 +105,7 @@ def width_combi(small_group_index_list,temp_order_group_data,material_width,thic
                     temp_count_list[index].append(temp_order_group_data['횟수'][j])
                     temp_index_list[index].append(j) #해당 index 저장
                     extra_width -= (temp_order_group_data['폭'][j]+addition_mim_width)
-                    if detail_code != 'FIN' and num_of_combi>=2: ## 조합이 3개 초과할 수 없음, FIN이 아니라면
-                        break;
-                    num_of_combi +=1
+
                     pre_mim_width = mim_width
 
                 try_combi_count+=1
@@ -105,9 +130,13 @@ def width_combi(small_group_index_list,temp_order_group_data,material_width,thic
                         if not find_index: ##해당 index가 없을 경우 새롭게 생성 [초과횟수(2),index]
                             temp_special_addition_count_list.append([2,temp_index_list[index][k]])
 
-            mim_width, max_mim_width = get_min_max_mim_width(num_of_combi,thickness,material_alloy,detail_code)
+            if len(temp_count_list[index]) > 0:
+                mim_width, max_mim_width = get_mim_info(mim_data,len(temp_width_list[index]),thickness,material_alloy,detail_code)
+            else:
+                #mim_width, max_mim_width = CONST_OUT_OF_COUNT_NUM, CONST_OUT_OF_COUNT_NUM
+                check_only_addition = False
 
-                #본 조합이 좋은 조합이면 살리고 아니면 죽임
+            #본 조합이 좋은 조합이면 살리고 아니면 죽임
             if not(checkCombination(temp_width_list,temp_index_list,index,extra_width,material_width, max_mim_width-mim_width)) \
                     or check_only_addition:
                 del temp_width_list[index]
@@ -622,9 +651,6 @@ def check_material(material_company,material_temper,material_thickness,order_mat
 
     if order_thickness <= material_thickness:
         thickness_check = True
-    #print("material_check",material_check)
-    #print("temper_check",temper_check)
-    #print("thickness_check",thickness_check)
     return (material_check and temper_check and thickness_check)
 
 def cal_residual(real_weight,combi_weight):

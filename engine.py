@@ -10,11 +10,14 @@ from copy import deepcopy
 import time
 
 class Engine:
-	def __init__(self,order_file_name="",material_file_name="",overlap="False"):
+	def __init__(self,order_file_name="",material_file_name="",mim_file_name="",overlap="False"):
+		self.data_location = ""
 		self.order_file_name=order_file_name
 		self.material_file_name=material_file_name
+		self.mim_file_name=mim_file_name
 		self.material_data = pd.DataFrame()
 		self.order_data = pd.DataFrame()
+		self.mim_data = pd.DataFrame()
 		self.big_group_name_list = [];
 		self.big_group_index_list=[]
 		self.material_name_list=[]
@@ -24,17 +27,24 @@ class Engine:
 		self.best_result = []
 		self.overlap = overlap
 		self.alloy_pair_list = []
+		self.weight_extra_width=0.3; self.weight_combi_count=0.1; self.weight_over_production=0.1; self.weight_residual_material=0.6;
+		self.weight_need_combi=0.5; self.weight_over_production_ratio=0.1; self.weight_wasted_materail=0.4;
 
 	def read_file(self):
 		self.order_data = pd.read_excel(self.order_file_name)
 		self.material_data = pd.read_excel(self.material_file_name)
+		self.mim_data = pd.read_excel(self.mim_file_name)
+		for i in range(len(self.material_file_name)):
+			if self.material_file_name[len(self.material_file_name)-i-1] == "/":
+				self.data_location = self.material_file_name[0:(len(self.material_file_name)-i)]
+				break
 		self.process_data()
 		self.set_big_and_material_group_info()
 
     #재고기반 grouping
 	def process_data(self):
 		## data sorting
-		self.material_data = self.material_data.sort_values(by=['ALLOY','TEMPER','포장중량','실폭','생산일자'],ascending=False).reset_index()
+		self.material_data = self.material_data.sort_values(by=['ALLOY','TEMPER','실폭','포장중량','생산일자'],ascending=False).reset_index()
 		self.order_data = self.order_data.fillna(0)
 		self.order_data = self.order_data.drop(['팀'],axis=1)
 
@@ -52,13 +62,13 @@ class Engine:
 			thickness = self.order_data['두께'][i]
 			width = self.order_data['폭'][i]
 			length = self.order_data['길이(기준)'][i]
-			goal_weight = self.order_data['생산량'][i]
+			goal_weight = self.order_data['생산량'][i]*(1-self.order_data['최소생산량'][i])
 			repeat = utils.calculateRepeat(thickness,width,length,goal_weight)
 			if utils.check_doubling(self.order_data['권취'][i]) and (repeat)%2 !=0 : ## 더블링인 경우 2의 배수로 저장
 				repeat+=1
 			self.order_data['횟수'][i] = repeat
-			if self.order_data['ALLOY_2'][i] == 0:
-				self.order_data['ALLOY_2'][i] = self.order_data['ALLOY_1'][i]
+			if self.order_data['우선순위'][i] == 0:
+				self.order_data['우선순위'][i] = 5
 
 		self.order_data['const_횟수'] = self.order_data['횟수']
 		self.order_data['addition_횟수'] = 0
@@ -210,16 +220,16 @@ class Engine:
 
 		return temp_order_group_data, temp_material_group_data , m_group_list
 
-	def get_combination(self, current_big_group_name,over_product_rate):
-		#temp_order_group_data, temp_material_group_data , \
-		#middle_group_name, middle_group_index, \
-		#small_group_name, small_group_index = self.get_current_big_group_info(current_big_group_name)
 
+
+	def get_combination(self, current_big_group_name,over_producton_rate):
 		temp_order_group_data, temp_material_group_data, mt_m_group_list = self.new_get_current_big_group_info(current_big_group_name)
-		#print(temp_order_group_data)
+		print(temp_order_group_data)
+
+		temp_material_group_data.to_csv("temp_material_group_data",index=True,sep='\t')
 
 		CONST_OUT_OF_COUNT_NUM = 100000
-		#over_product_rate = over_product_rate
+		over_producton_rate = over_producton_rate
 
 		SUM_OF_SCOURE = 0
 		SUM_OF_SCOURE_COUNT = 0
@@ -258,6 +268,7 @@ class Engine:
 							middle_group_index_list.append(j)
 
 				middle_start_index = middle_group_info[random_middle_index][1][1][0]
+
 				combi_try_count = -1
 				standard_score = 100
 				n = -1
@@ -349,7 +360,7 @@ class Engine:
 							temp_material_width = material_width
 
 							temp_width_list, temp_index_list, temp_count_list,special_addition_count_list \
-								= utils.width_combi(small_group_index_list,temp_order_group_data,\
+								= utils.width_combi(self.mim_data,small_group_index_list,temp_order_group_data,\
 									temp_material_width,thickness,material_alloy,detail_code,CONST_OUT_OF_COUNT_NUM)
 
 										#좋은 조합 모음 and 새로운 조합
@@ -429,7 +440,7 @@ class Engine:
 								temp_extra_width = 0
 
 								## 길이 조합
-								while combi_count < min(3,len(sorted_realweight_list)) \
+								while combi_count < min(4,len(sorted_realweight_list)) \
 								 		and temp_try_count<min(10,max_count) and min_weight < temp_total_extra:
 
 									temp_try_count += 1
@@ -504,9 +515,7 @@ class Engine:
 									temp_list[min_index][0] += addition_weight
 									temp_list[min_index][-1] += addition_residual
 
-									temp_weight_sum = 0
-									for i in range(len(temp_list)):
-										temp_weight_sum += (temp_list[i][0]+temp_list[i][-1])
+
 
 
 									### ex) [0, 0, 0, 1] -> 나중에 그 횟수를 따로 처리
@@ -516,14 +525,13 @@ class Engine:
 										else:
 											temp_list[min_index][5][i]= -temp_list[min_index][1]
 
-									### 점수 계산에 필요한 값들 update
-									temp_total_residual =temp_sum_redisual+(temp_total_extra-addition_weight+addition_residual)
-									temp_combi_weight += addition_weight
+									temp_weight_sum = 0
+									for i in range(len(temp_list)):
+										temp_weight_sum += temp_list[i][0]#+temp_list[i][-1])
 
-									#used_material = 0;
-									#for i in selected_material:
-									#	if n == i:
-									#		used_material = 1;
+									### 점수 계산에 필요한 값들 update
+									temp_total_residual =material_weight - temp_weight_sum#temp_sum_redisual+(temp_total_extra-addition_weight+addition_residual)
+									temp_combi_weight += addition_weight
 
 									## 각각의 추가 생산 비율의 합으로 점수 계산
 									sum_each_addition_rate = 0
@@ -543,11 +551,11 @@ class Engine:
 										addition_count = temp_addidion_dict[i]
 										expected_count = used_count+non_additional_index_count + addition_count
 										## 추가 생산 비율 추가
-										sum_each_addition_rate += addition_count/const_count
+										#sum_each_addition_rate += addition_count/const_count
 
 										if expected_count/const_count > 1+temp_order_group_data['최대생산량'][i]:
 											penalty = ((expected_count/const_count)-(1+temp_order_group_data['최대생산량'][i]))+1
-											penalty = math.pow(penalty,2)-1
+											penalty = penalty*(temp_order_group_data['우선순위'][i]-1)-1
 											sum_each_addition_rate += penalty
 
 											possible_count = False
@@ -555,22 +563,16 @@ class Engine:
 										elif current_count == const_count:
 											sum_each_addition_rate *= 0.8
 
-
-											#if : ## 한 번도 생산하지 않은 것은 강제로 생산
-											#	not_producted_order = True
-
-									#if not_producted_order == True:
-									#	possible_count = True
-
 									## 추가 생산 가능한 경우 계산
 									if not possible_count:
-										non_addtional_temp_score = 100 - (50*(temp_extra_width/100)\
-									                        +10*((combi_count-1)/3)\
-															+50*(not_additional_sum_redisual/processed_weight))
+										non_addtional_temp_score = 1 - (self.weight_extra_width*(temp_extra_width/80)\
+									                        +self.weight_combi_count*(combi_count-1)\
+															+self.weight_residual_material*(not_additional_sum_redisual/processed_weight))
 
-										additional_temp_score = 100 - (50*(temp_extra_width/100)\
-										                        +10*((combi_count-1)/3)\
-																+50*(sum_each_addition_rate+(temp_total_residual/processed_weight)))
+										additional_temp_score = 1 - (self.weight_extra_width*(temp_extra_width/80)\
+										                        +self.weight_combi_count*(combi_count-1)\
+																+self.weight_over_production*sum_each_addition_rate\
+																+self.weight_residual_material*(temp_total_residual/processed_weight))
 
 										if non_addtional_temp_score > additional_temp_score:
 											temp_list = not_additional_temp_list
@@ -578,13 +580,13 @@ class Engine:
 											sum_each_addition_rate = 0
 
 
-									temp_score = 100 - (50*(temp_extra_width/100)\
-									                        +10*((combi_count-1)/3)\
-															+50*(sum_each_addition_rate+(temp_total_residual/processed_weight)))
-															#100*(addition_weight/processed_weight)
+									temp_score = 1 -  (self.weight_extra_width*(temp_extra_width/80)\
+															+self.weight_combi_count*(combi_count-1)\
+															+self.weight_over_production*sum_each_addition_rate\
+															+self.weight_residual_material*(temp_total_residual/processed_weight))
+									temp_score *=100
 									## best 조합 선택
 									if total_best_score < temp_score:
-
 										total_best_score = temp_score
 										total_best_select_list = deepcopy(temp_list)
 										total_best_material_index = n
@@ -601,6 +603,8 @@ class Engine:
 							elif combi_try_count > len(temp_material_group_data) or standard_score<= total_best_score: #standard_score<=total_best_score or combi_try_count >= len(temp_material_group_data)*2 :
 
 								need_new_material = -100
+								print(total_best_score)
+
 								## best list 입력
 								select_list = (total_best_select_list)
 								best_score = total_best_score
@@ -610,6 +614,7 @@ class Engine:
 								material_width  = temp_material_group_data['실폭'][n]
 								combi_try_count = 0
 								standard_score = 100
+								print(select_list)
 
 								for i in range(len(select_list)):
 									for j in range(len(select_list[i][2])):
@@ -682,8 +687,8 @@ class Engine:
 						except:
 							pass
 
-		temp_order_group_data.to_csv("result",index=True,sep='\t')
-		temp_material_group_data.to_csv("material_result",index=True,sep='\t')
+		#temp_order_group_data.to_csv("result",index=True,sep='\t')
+		#temp_material_group_data.to_csv("material_result",index=True,sep='\t')
 
 		#len(temp_material_group_data)/len(selected_list)는 얼만큼 원자재를 많이 사용했는지 나타냄
 		rate_of_using_material=len(selected_list)/len(temp_material_group_data)
@@ -771,10 +776,10 @@ class Engine:
 				temp_combi_info_list.append(temp_combi_info)
 
 				total_combi_weigth_sum += temp_combi_weigth_sum
-				if temp_combi_weigth_sum/material_weight > 0.8:
-					total_wasted_weight_sum += material_weight-temp_combi_weigth_sum
-				else:
-					total_residaul_weigth_sum += material_weight-temp_combi_weigth_sum
+				#if temp_combi_weigth_sum/material_weight > 0.8:
+				total_wasted_weight_sum += material_weight-temp_combi_weigth_sum
+				#else:
+				#	total_residaul_weigth_sum += material_weight-temp_combi_weigth_sum
 
 			for j in range(len(temp_combi_info_list)):
 				temp_list = []
@@ -850,31 +855,29 @@ class Engine:
 		'코일수_2','원자재_3','코일수_3','원자재_4','코일수_4','원자재_5','코일수_5',\
 		'발주 원자재_1','발주 코일수_1','발주 원자재_2','발주 코일수_2'],data=order_df_list)
 
-
 		total_need_weight_sum = total_order_weigth_sum - total_combi_weigth_sum
 		ratio_of_extra_per_need = total_extra_weigth_sum/total_combi_weigth_sum
 
 
-		result_score = 50-(100*(total_need_weight_sum/total_order_weigth_sum) + 50*ratio_of_extra_per_need \
-						+ 40*(total_wasted_weight_sum/total_combi_weigth_sum) + 20*(total_residaul_weigth_sum/total_combi_weigth_sum) ) \
-						+ 0.5*(avg_score+(1-len(selected_list)/len(temp_material_group_data)))*(total_combi_weigth_sum/total_order_weigth_sum)
-
+		result_score = 50-50*(self.weight_need_combi*(total_need_weight_sum/total_order_weigth_sum) + self.weight_over_production_ratio*ratio_of_extra_per_need \
+						+ self.weight_wasted_materail*(total_wasted_weight_sum/total_combi_weigth_sum) ) \
+						+ 0.5*(avg_score+(1-len(selected_list)/len(temp_material_group_data))*(total_combi_weigth_sum/total_order_weigth_sum))
+						# + 20*(total_residaul_weigth_sum/total_combi_weigth_sum) )
 		print("result_score",result_score)
 
 		self.result_list.append([result_score, combi_df, order_df])
 
-	def start_combi(self,big_group_name,over_product_rate):
+	def start_combi(self,big_group_name,over_producton_rate):
 		selected_list, temp_order_group_data, temp_material_group_data, avg_score, rate_of_using_material\
-		 					= self.get_combination(big_group_name,over_product_rate)
+		 					= self.get_combination(big_group_name,over_producton_rate)
 		#self.get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
 		if selected_list != False:
 			self.new_get_result_data(selected_list, temp_order_group_data,temp_material_group_data,avg_score, rate_of_using_material)
 
-	def run_thread(self,big_group_name="",num_of_thread=1,over_product_rate=0.3):
-
+	def run_thread(self,big_group_name="",num_of_thread=1,over_producton_rate=0.3):
 		threads = []
 		for i in range(num_of_thread):
-			th = threading.Thread(target=self.start_combi, args=(big_group_name,over_product_rate))
+			th = threading.Thread(target=self.start_combi, args=(big_group_name,over_producton_rate))
 			threads.append(th)
 
 		for i in range(num_of_thread):
