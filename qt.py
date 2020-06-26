@@ -22,7 +22,7 @@ class MyWindow(QWidget):
 	def setupUI(self):
 
 		self.setGeometry(1200, 600, 400, 400)
-		self.setWindowTitle("알류미늄 폭조합")
+		self.setWindowTitle("알미늄 폭조합")
 
 		self.orderButton = QPushButton("Order File Open")
 		self.orderButton.clicked.connect(self.pushOrderButtonClicked)
@@ -50,7 +50,7 @@ class MyWindow(QWidget):
 		#self.current_info  = "진행 상태: 대기 중 입니다."
 		# Create textbox
 		self.textbox1 = QLineEdit("1",self)
-		#self.textbox2 = QLineEdit("0.3",self)
+		self.textbox2 = QLineEdit("0.8",self)
 		added_location = 30
 
 		#MG_weight box
@@ -132,8 +132,8 @@ class MyWindow(QWidget):
 
 		self.label1 = QLabel(self)
 		self.label1.setText("시뮬레이션 횟수 ex) 1")
-		#self.label2 = QLabel(self)
-		#self.label2.setText("추가 생산량 비율(소수점 단위로 입력 ex)0.3 )")
+		self.label2 = QLabel(self)
+		self.label2.setText("계산 속도( 0 < 입력 값, 빠를 수록 정확도 감소) ex) 0.2, 0.7, 3.1")
 		self.label3 = QLabel(self)
 		self.label3.setText("조합할 ALLOY 종류를 선택하세요.")
 		self.empty = QLabel(self)
@@ -152,6 +152,8 @@ class MyWindow(QWidget):
 
 		for i in range(8):
 			layout.addWidget(self.empty)
+		layout.addWidget(self.label2)
+		layout.addWidget(self.textbox2)
 		layout.addWidget(self.label1)
 		layout.addWidget(self.textbox1)
 		layout.addWidget(self.check_overlap)
@@ -185,7 +187,8 @@ class MyWindow(QWidget):
 				overlap = True
 				self.title = "/중복허용"
 
-			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0],self.mim_file_name[0],overlap)
+			speed_ratio = float(self.textbox2.text())
+			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0],self.mim_file_name[0],overlap,speed_ratio)
 			if self.w_MG_textbox1.text()!="":
 				self.e.weight_extra_width = float(self.w_MG_textbox1.text())
 			if self.w_MG_textbox2.text()!="":

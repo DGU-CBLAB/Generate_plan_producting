@@ -119,11 +119,11 @@ def width_combi(mim_data,small_group_index_list,temp_order_group_data,material_w
                         temp_count_list[index][k] = temp_count_list[index][k] // count_index_list[temp_index_list[index][k]]
 
                     if temp_count_list[index][k] == 0: ## 초과 입력되는 경우
-                        temp_count_list[index][k] =2 ##doubling을 고려하여 2번
+                        temp_count_list[index][k] =1
                         find_index = False
                         for a in range(len(temp_special_addition_count_list)):
                             if temp_special_addition_count_list[a][1] == temp_index_list[index][k]: ##해당 index가 있을 경우
-                                temp_special_addition_count_list[a][0] += 2 ##초과 횟수 추가
+                                temp_special_addition_count_list[a][0] += 1 ##초과 횟수 추가
                                 find_index = True
                                 break;
 
@@ -237,11 +237,11 @@ def width_combi_with_simple_heuristic(small_group_index_start,small_group_index_
                         temp_count_list[index][k] = temp_count_list[index][k] // count_index_list[temp_index_list[index][k]]
 
                     if temp_count_list[index][k] == 0: ## 초과 입력되는 경우
-                        temp_count_list[index][k] =2 ##doubling을 고려하여 2번
+                        temp_count_list[index][k] =1 ##doubling을 고려하여 2번
                         find_index = False
                         for a in range(len(temp_special_addition_count_list)):
                             if temp_special_addition_count_list[a][1] == temp_index_list[index][k]: ##해당 index가 있을 경우
-                                temp_special_addition_count_list[a][0] += 2 ##초과 횟수 추가
+                                temp_special_addition_count_list[a][0] += 1 ##초과 횟수 추가
                                 find_index = True
                                 break;
 
@@ -382,11 +382,11 @@ def brute(CONST_OUT_OF_COUNT_NUM,temp_order_group_data,small_group_index_end,cur
                     temp_count_list[k] = temp_count_list[k] // count_index_list[temp_index_list[k]]
 
                 if temp_count_list[k] == 0: ## 초과 입력되는 경우
-                    temp_count_list[k] =2 ##doubling을 고려하여 2번
+                    temp_count_list[k] =1 ##doubling을 고려하여 2번
                     find_index = False
                     for a in range(len(temp_special_addition_count_list)):
                         if temp_special_addition_count_list[a][1] == temp_index_list[k]: ##해당 index가 있을 경우
-                            temp_special_addition_count_list[a][0] += 2 ##초과 횟수 추가
+                            temp_special_addition_count_list[a][0] += 1 ##초과 횟수 추가
                             find_index = True
 
 
@@ -509,11 +509,11 @@ def width_combi_with_better_greedy(small_group_index_start,small_group_index_end
                     temp_count_list[index][k] = temp_count_list[index][k] // count_index_list[temp_index_list[index][k]]
 
                 if temp_count_list[index][k] == 0: ## 초과 입력되는 경우
-                    temp_count_list[index][k] =2 ##doubling을 고려하여 2번
+                    temp_count_list[index][k] =1 ##doubling을 고려하여 2번
                     find_index = False
                     for a in range(len(temp_special_addition_count_list)):
                         if temp_special_addition_count_list[a][1] == temp_index_list[index][k]: ##해당 index가 있을 경우
-                            temp_special_addition_count_list[a][0] += 2 ##초과 횟수 추가
+                            temp_special_addition_count_list[a][0] += 1 ##초과 횟수 추가
                             find_index = True
                             break;
 
@@ -588,11 +588,11 @@ def width_combi_with_greedy(small_group_index_start,small_group_index_end,temp_o
                     temp_count_list[index][k] = temp_count_list[index][k] // count_index_list[temp_index_list[index][k]]
 
                 if temp_count_list[index][k] == 0: ## 초과 입력되는 경우
-                    temp_count_list[index][k] =2 ##doubling을 고려하여 2번
+                    temp_count_list[index][k] =1 ##doubling을 고려하여 2번
                     find_index = False
                     for a in range(len(temp_special_addition_count_list)):
                         if temp_special_addition_count_list[a][1] == temp_index_list[index][k]: ##해당 index가 있을 경우
-                            temp_special_addition_count_list[a][0] += 2 ##초과 횟수 추가
+                            temp_special_addition_count_list[a][0] += 1 ##초과 횟수 추가
                             find_index = True
                             break;
 
@@ -645,6 +645,7 @@ def check_material(material_company,material_temper,material_thickness,order_mat
         for material in material_list:
             if material == material_company:
                 material_check = True
+                break
 
     if material_temper == order_temper:
         temper_check = True
@@ -731,25 +732,25 @@ def checkCombination(temp_list,temp_index_list,index,extra_width,max_width, max_
     else:
         return False
 
-def combiWeight(thickness,width_list,length,weight,repeat):
+def combiWeight(thickness,width_list,length,weight,repeat,doubling):
     sum_width=0
     for width in width_list:
         sum_width+= width
 
-    combi_weight = thickness*sum_width*length*weight*2.71*0.000001*repeat*2
+    combi_weight = thickness*sum_width*length*weight*2.71*0.000001*repeat*doubling  ## doubling일 경우만 *2(B는 doubing 아님)
     return (combi_weight)
 
-def realWeight(thickness,width,length,weight,repeat):
-    real_weight = thickness*width*length*weight*2.71*0.000001*repeat*2
+def realWeight(thickness,width,length,weight,repeat,doubling):
+    real_weight = thickness*width*length*weight*2.71*0.000001*repeat*doubling
     return (real_weight)
 
-def calculateRepeat(thickness,width,length,goal_weight):
+def calculateRepeat(thickness,width,length,goal_weight,doubing):
     repeat = 0
     corrent_weight =0
     goal_weight *=1000
     while (corrent_weight<=goal_weight):
         repeat+=1
-        corrent_weight = realWeight(thickness,width,length,1,repeat)
+        corrent_weight = realWeight(thickness,width,length,1,repeat,doubing)
     return repeat
 
 def expectRealweight(realweight):
@@ -930,6 +931,6 @@ def get_min_max_mim_width(num,thickness,alloy,detail_code):
 
 def check_doubling(doubling_code):
     if doubling_code == 'G' or doubling_code == 'M': #G M
-        return True
+        return 2
     else:
-        return False
+        return 1
