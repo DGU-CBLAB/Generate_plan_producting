@@ -42,9 +42,9 @@ def width_combi(mim_data,small_group_index_list,temp_order_group_data,material_w
             min_width = temp_order_group_data['폭'][j]
         ## 횟수가 없는 오더도 포함
         if temp_order_group_data['횟수'][j]<CONST_OUT_OF_COUNT_NUM and temp_order_group_data['길이(기준)'][j] >0:
-            prob = temp_order_group_data['횟수'][j]*(6-temp_order_group_data['우선순위'][j])+3
+            prob = temp_order_group_data['횟수'][j]*(6-temp_order_group_data['우선순위'][j])+5
             count_index.append((prob,j))
-            max_index_count += prob/(6-temp_order_group_data['우선순위'][j]) - 3
+            max_index_count += temp_order_group_data['횟수'][j]
             sum_count += prob
 
         ## 횟수 모두 사용한 경우: 확률 1로 값 부여
@@ -61,13 +61,12 @@ def width_combi(mim_data,small_group_index_list,temp_order_group_data,material_w
 
     ## 횟수가 양수일 경우 -> elements(조합) 구함
     if sum_count >0:
-
         count_index.sort(reverse=True)
         index_count = -1
         index = -1
 
         initial_mim_width, initial_max_mim_width = get_mim_info(mim_data,1,thickness,material_alloy,detail_code)
-#       max_index_count *=max_index_count
+        #max_index_count *=max_index_count
 
         while (index_count < max_index_count and material_width >= min_width+initial_mim_width):
             #'ALLOY','권취','TEMPER','두께','길이','내경','코아','폭' 일치 (small group)
@@ -306,8 +305,6 @@ def sub_brute(CONST_OUT_OF_COUNT_NUM,temp_order_group_data,small_group_index_end
 
 def brute(CONST_OUT_OF_COUNT_NUM,temp_order_group_data,small_group_index_end,current_index,current_index_count,thickness,material_width,material_alloy,detail_code,\
                 width_list,index_list,count_list,pre_mim_width,extra_width, all_width_list,all_index_list,all_count_list,all_special_list):
-
-    print(current_index,small_group_index_end,current_index_count)
 
     temp_width_list=deepcopy(width_list); temp_index_list = deepcopy(index_list); temp_count_list= deepcopy(count_list);
 

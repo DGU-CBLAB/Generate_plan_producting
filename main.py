@@ -3,10 +3,10 @@ import time
 from copy import deepcopy
 overlap = False
 #e = eg.Engine('./data/폭조합용 세부자료_V2_190916.xls','./data/원자재내역.XLS',overlap)
-e = eg.Engine('./data/폭조합용 세부자료_V3.xls','./data/원자재내역_200604.xlsx','./data/mim.xlsx',overlap,1)
+e = eg.Engine('./data/폭조합용 세부자료_V3_일반재.xls','./data/원자재내역_200604.xlsx','./data/mim.xlsx',overlap,1)
 e.read_file()
 e.speed_ratio = 1
-alloy = ["A1100"]#,"A1250""A1050","A1100","A8079","A3003","A8021","F308","F309","BRW04"]
+alloy = ["A1050"]#,"A1250""A1050","A1100","A8079","A3003","A8021","F308","F309","BRW04"]
 ## A3003, F308, BRW04, F309-> 적절한 원자재가 없음
 
 start = time.time()
@@ -18,7 +18,7 @@ e.overlap = overlap
 for i in alloy:
     temp_e = deepcopy(e)
     #over_producton_rate = 0.3 #추가 비율
-    num_of_thread = 1
+    num_of_thread = 8
 
     if num_of_thread>8:
         num_of_loop = int(num_of_thread/8)

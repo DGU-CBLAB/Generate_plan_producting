@@ -118,6 +118,13 @@ class MyWindow(QWidget):
 		self.w_BG_textbox3.move(115,300+added_location)
 		self.w_BG_textbox3.resize(30,20)
 
+		self.w_BG_label4 = QLabel(self)
+		self.w_BG_label4.setText("원자재 수량 제한 비중")
+		self.w_BG_label4.move(150,295+added_location)
+		self.w_BG_textbox4 = QLineEdit(self)
+		self.w_BG_textbox4.move(265,300+added_location)
+		self.w_BG_textbox4.resize(30,20)
+
 		for i in alloy:
 			self.alloy_list.append(QCheckBox(i, self))
 
@@ -187,8 +194,9 @@ class MyWindow(QWidget):
 				overlap = True
 				self.title = "/중복허용"
 
-			speed_ratio = float(self.textbox2.text())
-			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0],self.mim_file_name[0],overlap,speed_ratio)
+			self.e = eg.Engine(self.order_file_name[0],self.material_file_name[0],self.mim_file_name[0],overlap)
+			if self.textbox2.text() != "":
+				self.e.speed_ratio = float(self.textbox2.text())
 			if self.w_MG_textbox1.text()!="":
 				self.e.weight_extra_width = float(self.w_MG_textbox1.text())
 			if self.w_MG_textbox2.text()!="":
@@ -204,6 +212,8 @@ class MyWindow(QWidget):
 				self.e.weight_over_production_ratio = float(self.w_BG_textbox2.text())
 			if self.w_BG_textbox3.text()!="":
 				self.e.weight_wasted_materail = float(self.w_BG_textbox3.text())
+			if self.w_BG_textbox4.text()!="":
+				self.e.weight_used_materail = float(self.w_BG_textbox4.text())
 
 			self.e.read_file()
 
@@ -211,7 +221,6 @@ class MyWindow(QWidget):
 			for i in range(len(select_alloy_list)):
 				temp_e = deepcopy(self.e)
 				num_of_thread = int(self.textbox1.text())
-				#residual_rate = float(self.textbox2.text())
 
 				if num_of_thread>10:
 					num_of_loop = int(num_of_thread/10)
